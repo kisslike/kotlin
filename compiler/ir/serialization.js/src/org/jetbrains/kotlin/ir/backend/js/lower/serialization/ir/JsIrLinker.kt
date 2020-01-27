@@ -8,13 +8,17 @@ package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
 import org.jetbrains.kotlin.backend.common.LoggingContext
 import org.jetbrains.kotlin.backend.common.serialization.DeserializationStrategy
 import org.jetbrains.kotlin.backend.common.serialization.KotlinIrLinker
+import org.jetbrains.kotlin.backend.common.serialization.*
+import org.jetbrains.kotlin.backend.common.serialization.signature.IdSignatureSerializer
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.konan.kotlinLibrary
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.util.SymbolTable
 
-class JsIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable) :
-    KotlinIrLinker(logger, builtIns, symbolTable, emptyList(), null) {
+class JsIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable, deserializeFakeOverrides: Boolean) :
+    KotlinIrLinker(logger, builtIns, symbolTable, emptyList(), null, deserializeFakeOverrides, IdSignatureSerializer(JsManglerIr)) {
 
     override fun reader(moduleDescriptor: ModuleDescriptor, fileIndex: Int, idSigIndex: Int) =
         moduleDescriptor.kotlinLibrary.irDeclaration(idSigIndex, fileIndex)

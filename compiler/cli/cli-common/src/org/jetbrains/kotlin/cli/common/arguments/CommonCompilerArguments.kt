@@ -326,6 +326,12 @@ abstract class CommonCompilerArguments : CommonToolArguments() {
     )
     var klibBasedMpp: Boolean by FreezableVar(false)
 
+    @Argument(
+        value = "-Xdeserialize-fake-overrides",
+        description = "Assume klibs contain serialized fake overrides"
+    )
+    var calculateFakeOverrides: Boolean by FreezableVar(false)
+
     @Argument(value = "-Xdisable-default-scripting-plugin", description = "Do not enable scripting plugin by default")
     var disableDefaultScriptingPlugin: Boolean by FreezableVar(false)
 

@@ -1121,7 +1121,10 @@ open class IrFileSerializer(
             .setName(serializeName(clazz.name))
 
         clazz.declarations.forEach {
-            proto.addDeclaration(serializeDeclaration(it))
+            if (it.isFakeOverride ) 
+                println("SKIPPING serialization for ${it.descriptor}")
+            else 
+                proto.addDeclaration(serializeDeclaration(it))
         }
 
         clazz.typeParameters.forEach {

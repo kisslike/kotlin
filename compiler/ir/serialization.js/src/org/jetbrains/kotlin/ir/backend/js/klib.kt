@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.konan.util.KlibMetadataFactories
 import org.jetbrains.kotlin.library.*
 import org.jetbrains.kotlin.library.impl.BuiltInsPlatform
 import org.jetbrains.kotlin.library.impl.buildKoltinLibrary
+import org.jetbrains.kotlin.library.impl.createKotlinLibraryComponents
 import org.jetbrains.kotlin.library.resolver.KotlinLibraryResolveResult
 import org.jetbrains.kotlin.library.resolver.TopologicalLibraryOrder
 import org.jetbrains.kotlin.metadata.ProtoBuf
@@ -85,6 +86,10 @@ private val CompilerConfiguration.metadataVersion
 
 private val CompilerConfiguration.klibMpp: Boolean
     get() = get(CommonConfigurationKeys.KLIB_MPP) ?: false
+
+private val CompilerConfiguration.calculateFakeOverrides: Boolean
+    get() = get(CommonConfigurationKeys.CALCULATE_FAKE_OVERRIDES) ?: false
+
 
 class KotlinFileSerializedData(val metadata: ByteArray, val irData: SerializedIrFile)
 
@@ -192,7 +197,7 @@ fun loadIr(
             val irBuiltIns = psi2IrContext.irBuiltIns
             val symbolTable = psi2IrContext.symbolTable
 
-            val deserializer = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable)
+            val deserializer = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable, configuration.calculateFakeOverrides)
 
             val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
                 deserializer.deserializeIrModuleHeader(depsDescriptors.getModuleDescriptor(it))!!
@@ -223,7 +228,7 @@ fun loadIr(
             typeTranslator.constantValueGenerator = constantValueGenerator
             constantValueGenerator.typeTranslator = typeTranslator
             val irBuiltIns = IrBuiltIns(moduleDescriptor.builtIns, typeTranslator, signaturer, symbolTable)
-            val deserializer = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable)
+            val deserializer = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable, configuration.calculateFakeOverrides)
 
             val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
                 val strategy =

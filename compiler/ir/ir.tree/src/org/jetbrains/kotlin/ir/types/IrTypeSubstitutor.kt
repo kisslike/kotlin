@@ -17,7 +17,8 @@ import org.jetbrains.kotlin.types.model.TypeSubstitutorMarker
 class IrTypeSubstitutor(
     typeParameters: List<IrTypeParameterSymbol>,
     typeArguments: List<IrTypeArgument>,
-    private val irBuiltIns: IrBuiltIns
+    private val irBuiltIns: IrBuiltIns,
+    private val allowUnsubstituted: Boolean = false
 ): TypeSubstitutorMarker {
     init {
         assert(typeParameters.size == typeArguments.size) {
@@ -37,8 +38,11 @@ class IrTypeSubstitutor(
     }
 
     private fun getSubstitutionArgument(typeParameter: IrTypeParameterSymbol): IrTypeArgument =
-        substitution[typeParameter]
-            ?: throw AssertionError("Unsubstituted type parameter: ${typeParameter.owner.render()}")
+       // if (allowUnsubstituted)
+       //     substitution[typeParameter] ?: typeParameter.owner
+       // else
+            substitution[typeParameter]
+                ?: throw AssertionError("Unsubstituted type parameter: ${typeParameter.owner.render()}")
 
     fun substitute(type: IrType): IrType {
         if (substitution.isEmpty()) return type

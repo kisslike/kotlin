@@ -47,6 +47,9 @@ object CommonConfigurationKeys {
 
     @JvmField
     val KLIB_MPP = CompilerConfigurationKey.create<Boolean>("Klib based MPP")
+
+    @JvmField
+    val CALCULATE_FAKE_OVERRIDES = CompilerConfigurationKey.create<Boolean>("Deserialize fake overrides from klibs")
 }
 
 var CompilerConfiguration.languageVersionSettings: LanguageVersionSettings

@@ -104,7 +104,7 @@ import org.jetbrains.kotlin.backend.common.serialization.proto.PublicIdSignature
 import org.jetbrains.kotlin.backend.common.serialization.proto.AccessorIdSignature as ProtoAccessorIdSignature
 import org.jetbrains.kotlin.backend.common.serialization.proto.FileLocalIdSignature as ProtoFileLocalIdSignature
 
-abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBuiltIns, val symbolTable: SymbolTable) {
+abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBuiltIns, val symbolTable: SymbolTable, val calculateFakeOverrides: Boolean) {
 
     abstract fun deserializeIrSymbolToDeclare(code: Long): Pair<IrSymbol, IdSignature>
     abstract fun deserializeIrSymbol(code: Long): IrSymbol
@@ -987,7 +987,13 @@ abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBu
                 (descriptor as? WrappedReceiverParameterDescriptor)?.bind(this)
             }
         }
-
+/*
+    private val ProtoDeclaration.isFakeOverride: Boolean
+        get() =
+            this.declaratorCase == IR_FUNCTION && this.irFunction.isFakeOverride ||
+            this.declaratorCase == IR_FIELD && this.irField.isFakeOverride ||
+            this.declaratorCase == IR_PROPERTY && this.irProperty.isFakeOverride
+*/
     private fun deserializeIrClass(proto: ProtoClass) =
         withDeserializedIrDeclarationBase(proto.base) { symbol, signature, startOffset, endOffset, origin, fcode ->
             val flags = ClassFlags.decode(fcode)
