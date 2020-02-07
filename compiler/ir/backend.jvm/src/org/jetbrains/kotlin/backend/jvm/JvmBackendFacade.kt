@@ -54,7 +54,7 @@ object JvmBackendFacade {
             psi2irContext.moduleDescriptor, psi2irContext.symbolTable, psi2irContext.irBuiltIns.languageVersionSettings, extensions
         )
         val deserializer = JvmIrLinker(
-            EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable
+            EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable, true
         )
         psi2irContext.moduleDescriptor.allDependencyModules.filter { it.getCapability(KlibModuleOrigin.CAPABILITY) != null }.forEach {
             deserializer.deserializeIrModuleHeader(it)

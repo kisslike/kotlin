@@ -126,7 +126,7 @@ abstract class KotlinIrLinker(
 
     protected val globalDeserializationState = DeserializationState.SimpleDeserializationState { true }
     private val modulesWithReachableTopLevels = mutableSetOf<IrModuleDeserializer>()
-    private val fakeOverrideBuilder = FakeOverrideBuilder(signaturer, globalDeserializationState)
+    private val fakeOverrideBuilder = FakeOverrideBuilder(symbolTable, signaturer, globalDeserializationState)
 
     //TODO: This is Native specific. Eliminate me.
     private val forwardDeclarations = mutableSetOf<IrSymbol>()
@@ -667,19 +667,22 @@ abstract class KotlinIrLinker(
 
         deserializeAllReachableTopLevels()
 
-        return descriptor
         fakeOverrideBuilder.buildFakeOverrides()
+        return descriptor
     }
 
     override fun getDeclaration(symbol: IrSymbol): IrDeclaration? {
 
         if (!symbol.isPublicApi) return null
 
+        println("getDeclaration asked for ${symbol.descriptor} for $symbol")
+
         if (!symbol.isBound) {
+            println("getDeclaration: ${symbol.descriptor} is not bound yet")
             findDeserializedDeclarationForSymbol(symbol) ?: return null
         }
 
-        println("Bound to ${ir2string(symbol.owner)}")
+        println("getDeclaration: Bound to ${ir2string(symbol.owner)}")
 
         // TODO: we do have serializations for those, but let's just create a stub for now.
         if (!symbol.isBound && (symbol.descriptor.isExpectMember || symbol.descriptor.containingDeclaration?.isExpectMember == true))
