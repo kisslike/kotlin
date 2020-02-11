@@ -4,6 +4,9 @@ import org.jetbrains.kotlin.backend.common.DescriptorsToIrRemapper
 import org.jetbrains.kotlin.backend.common.WrappedDescriptorPatcher
 import org.jetbrains.kotlin.backend.common.ir.ir2string
 import org.jetbrains.kotlin.backend.common.serialization.signature.IdSignatureSerializer
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
@@ -15,8 +18,11 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.multiplatform.findActuals
 
 class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignatureSerializer, val globalDeserializationState: KotlinIrLinker.DeserializationState<IdSignature>) {
     private val needFakeOverrides = mutableListOf<IrClass>()
@@ -24,12 +30,29 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
     private val deserializationStateForClass = mutableMapOf<IrClass, KotlinIrLinker.DeserializationState<IdSignature>>()
 
     fun needsFakeOverride(clazz: IrClass, deserializationState: KotlinIrLinker.DeserializationState<IdSignature>) {
-        println("NEEDS FAKE OVERRIDE: ${clazz.symbol.descriptor}")
-        if (!clazz.symbol.isPublicApi) return
+ /*       if (!clazz.symbol.isPublicApi) return
+        println("NEEDS FAKE OVERRIDE: ${clazz.symbol.descriptor} ${clazz.symbol.signature}")
         deserializationStateForClass.put(clazz, deserializationState)
         needFakeOverrides += clazz
+   */
+        clazz.acceptVoid(object : IrElementVisitorVoid {
+            override fun visitElement(element: IrElement) {
+                element.acceptChildrenVoid(this)
+            }
+            override fun visitClass(declaration: IrClass) {
+                println("visiting: ${declaration.name} ${declaration.symbol}")
+                if  (declaration.symbol.isPublicApi) {
+                    println("NEEDS FAKE OVERRIDE: ${clazz.symbol.descriptor} ${clazz.symbol.signature}")
+
+                    deserializationStateForClass.put(declaration, deserializationState)
+                    needFakeOverrides += declaration
+                }
+                super.visitClass(declaration)
+            }
+        })
+
     }
-    private fun fakeOverrideMember(superType: IrType, function: IrSimpleFunction, clazz: IrClass): IrSimpleFunction {
+    private fun fakeOverrideMember(superType: IrType, member: IrDeclaration, clazz: IrClass): IrDeclaration {
         if (superType !is IrSimpleType) error("superType is $superType, expected IrSimpleType")
         val classifier = superType.classifier
         if (classifier !is IrClassSymbol) error("superType classifier is not IrClassSymbol: ${classifier}")
@@ -45,13 +68,32 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         val substitutionMap = typeParameters.zip(typeArguments).toMap()
         val copier = DeepCopyIrTreeWithSymbolsForFakeOverrides(substitutionMap, clazz)
 
-        val deepCopyFakeOverride = copier.copy(function) as IrSimpleFunction
+        require(member is IrOverridableDeclaration<*>)
+        val deepCopyFakeOverride = copier.copy(member)
+        require(deepCopyFakeOverride is IrOverridableDeclaration<*>)
         deepCopyFakeOverride.parent = clazz
+        require(deepCopyFakeOverride is IrSymbolDeclaration<*>)
         assert(deepCopyFakeOverride.symbol.owner == deepCopyFakeOverride)
         assert((deepCopyFakeOverride.symbol.descriptor as? WrappedSimpleFunctionDescriptor)?.owner == deepCopyFakeOverride)
 
         return deepCopyFakeOverride
     }
+
+    private val IrDeclaration.isFakeOverride: Boolean
+        get () = when (this) {
+            is IrSimpleFunction -> this.isFakeOverride
+            is IrProperty -> this.isFakeOverride
+            is IrField -> this.isFakeOverride
+            else -> false
+        }
+
+    private val IrDeclaration.overriddenSymbols: List<IrSymbol>
+        get() = when (this) {
+            is IrSimpleFunction -> this.overriddenSymbols
+            is IrProperty -> this.overriddenSymbols
+            is IrField -> this.overriddenSymbols
+            else -> emptyList()
+        }
 
     // TODO: make me non-recursive.
     private fun buildFakeOverridesForClass(clazz: IrClass) {
@@ -80,7 +122,8 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
 
         val allOverridden = clazz.declarations
             .filter { it is IrSimpleFunction }
-            .filterNot { (it as IrSimpleFunction).isFakeOverride }
+            .filterIsInstance<IrOverridableDeclaration<*>>()
+            .filterNot { it.isFakeOverride }
             .flatMap { (it as IrSimpleFunction).overriddenSymbols }
             .map { if (it.isBound) it.owner else null }
         println("\tOverridden symbol declarations: ${allOverridden.map { it?.name }}")
@@ -112,18 +155,18 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
             println("\t\t\tDESER: $it")
         }
 
-        val newFakeOverrides = mutableListOf<IrSimpleFunction>()
+        val newFakeOverrides = mutableListOf<IrDeclaration>()
         clazz.superTypes.forEach { superType ->
             superType.classOrNull?.let {
                 if (it.isBound) {
                     val superClass = it.owner
                     println("\tfrom ${ir2string(superClass)}:")
                     superClass.declarations
-                        .filter { it is IrSimpleFunction /*|| it is IrProperty */ }
-                        .filter { (it as IrSimpleFunction).symbol.isPublicApi }
+                        .filterIsInstance<IrOverridableDeclaration<*>>()
+                        .filter { (it as IrSymbolDeclaration<*>).symbol.isPublicApi }
                         .filterNot { allOverridden.filterNotNull().contains(it) }
                         .map {
-                            fakeOverrideMember(superType, (it as IrSimpleFunction), clazz).also {
+                            fakeOverrideMember(superType, it, clazz).also {
                                 newFakeOverrides.add(it)
                             }
                         }.also {
@@ -140,11 +183,12 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         newFakeOverrides
             .distinctBy { signaturer.composePublicIdSignature(it) }
             .forEach { fake ->
-                val IdSignature = signaturer.composePublicIdSignature(fake)
+                require(fake is IrSimpleFunction)
+                val properSignature = signaturer.composePublicIdSignature(fake)
                 val deserializationState = deserializationStateForClass[clazz.findTopLevelDeclaration()] ?: error("No state for ${ir2string(clazz)}")
 
-                deserializationState.deserializedSymbols[IdSignature] ?. let {
-                        deserializedSymbol ->
+                val deserializedSymbol = deserializationState.deserializedSymbols[properSignature]
+                if (deserializedSymbol != null) {
                     if ((fake as IrFunction).symbol !is IrDelegatingSimpleFunctionSymbolImpl) {
                         error("Somebody elses fake override: in ${ir2string(clazz)} ${ir2string(fake)} ${(fake as IrFunction).symbol}")
                     }
@@ -154,17 +198,15 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                     println("binding (state for class) in ${ir2string(clazz)} fake ${ir2string(fake)}")
                     deserializedSymbol.bind(fake)
                     (deserializedSymbol.descriptor as? WrappedSimpleFunctionDescriptor)?.bind(fake)
-                    //(deserializedSymbol.descriptor is? WrappedSimpleFunctionDescriptor)?.let {
-                    //    it.bind(fake)
-                    //}
-                } ?: run {
+
+                } else {
                     println("No symbols for ${(fake as IrFunction).name.asString()} yet, couldn't redelegate.")
                     println("Placing ${(fake as IrFunction).symbol} ${signaturer.composePublicIdSignature(fake)} to state ${deserializationStateForClass[clazz]}")
-                    val symbolWithProperSignature = IrSimpleFunctionPublicSymbolImpl((fake as IrFunction).symbol.descriptor, signaturer.composePublicIdSignature(fake))
+                    val symbolWithProperSignature = symbolTable.referenceSimpleFunctionFromLinker((fake as IrFunction).symbol.descriptor, properSignature)
                     ((fake as IrFunction).symbol as IrDelegatingSimpleFunctionSymbolImpl).delegate = symbolWithProperSignature
-                    deserializationState.deserializedSymbols[IdSignature] = symbolWithProperSignature
+                    deserializationState.deserializedSymbols[properSignature] = symbolWithProperSignature
+                    println("binding $symbolWithProperSignature to ${ir2string(fake)}")
                     symbolWithProperSignature.bind(fake)
-                    //(symbolWithProperSignature.descriptor as? WrappedSimpleFunctionDescriptor)?.bind(fake)
                 }
                 clazz.declarations.add(fake)
                 println("Declaring ${fake.symbol} ${fake.symbol.signature} to be ${ir2string(fake)}")

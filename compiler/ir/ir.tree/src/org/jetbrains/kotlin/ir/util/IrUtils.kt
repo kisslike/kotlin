@@ -239,8 +239,8 @@ val IrDeclaration.isReal: Boolean get() = !isFakeOverride
 val IrDeclaration.isFakeOverride: Boolean
     get() = when (this) {
         is IrSimpleFunction -> isFakeOverride
-        is IrProperty -> isFakeOverride
-        is IrField -> isFakeOverride
+        //is IrProperty -> isFakeOverride
+        //is IrField -> isFakeOverride
         else -> false
     }
 

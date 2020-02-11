@@ -392,6 +392,7 @@ open class SymbolTable(val signaturer: IdSignatureComposer) : ReferenceSymbolTab
 
     override fun referenceClassFromLinker(descriptor: ClassDescriptor, sig: IdSignature): IrClassSymbol =
         classSymbolTable.run {
+            if (sig.toString().contains("Entry")) println("referenceClassFromLinker $sig")
             if (sig.isPublic) referenced(sig) { IrClassPublicSymbolImpl(descriptor, sig) }
             else referenced(descriptor) { IrClassSymbolImpl(descriptor) }
         }

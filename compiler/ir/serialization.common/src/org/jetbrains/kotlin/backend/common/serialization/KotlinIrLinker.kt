@@ -676,9 +676,20 @@ abstract class KotlinIrLinker(
         if (!symbol.isPublicApi) return null
 
         println("getDeclaration asked for ${symbol.descriptor} for $symbol")
+        if (symbol is IrSimpleFunctionPublicSymbolImpl) println("which is ${symbol.signature}")
 
         if (!symbol.isBound) {
             println("getDeclaration: ${symbol.descriptor} is not bound yet")
+/*
+            if (symbol is IrSimpleFunctionSymbol &&
+                symbol.descriptor.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+
+                val parentDescriptor = symbol.descriptor.containingDeclaration as ClassDescriptor
+                val parentSymbol =  symbolTable.referenceClass(parentDescriptor)
+                findDeserializedDeclarationForSymbol(parentSymbol)
+                return null
+            }
+*/
             findDeserializedDeclarationForSymbol(symbol) ?: return null
         }
 
