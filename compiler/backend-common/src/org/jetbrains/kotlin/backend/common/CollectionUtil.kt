@@ -9,7 +9,7 @@ fun <T> Collection<T>.atMostOne(): T? {
     return when (this.size) {
         0 -> null
         1 -> this.iterator().next()
-        else -> throw IllegalArgumentException("Collection has more than one element.")
+        else -> throw IllegalArgumentException("Collection has more than one element: $this")
     }
 }
 

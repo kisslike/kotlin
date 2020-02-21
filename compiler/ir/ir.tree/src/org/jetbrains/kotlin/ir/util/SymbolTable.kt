@@ -392,7 +392,6 @@ open class SymbolTable(val signaturer: IdSignatureComposer) : ReferenceSymbolTab
 
     override fun referenceClassFromLinker(descriptor: ClassDescriptor, sig: IdSignature): IrClassSymbol =
         classSymbolTable.run {
-            if (sig.toString().contains("Entry")) println("referenceClassFromLinker $sig")
             if (sig.isPublic) referenced(sig) { IrClassPublicSymbolImpl(descriptor, sig) }
             else referenced(descriptor) { IrClassSymbolImpl(descriptor) }
         }
@@ -661,6 +660,29 @@ open class SymbolTable(val signaturer: IdSignatureComposer) : ReferenceSymbolTab
                 declare(descriptor, { IrSimpleFunctionSymbolImpl(descriptor) }, functionFactory)
             }
         }
+    }
+
+    fun rebindSimpleFunction(
+        sig: IdSignature,
+        function: IrSimpleFunction
+    ) {
+        assert(sig.isPublic)
+        val symbol = simpleFunctionSymbolTable.referenced(sig) { error("Symbol for $sig must be in the symbol table") }
+        assert(symbol.owner == function)
+        simpleFunctionSymbolTable.unboundSymbols.remove(symbol)
+    }
+
+    fun rebindProperty(
+        sig: IdSignature,
+        property: IrProperty
+    ) {
+        assert(sig.isPublic)
+        val symbol = propertySymbolTable.referenced(sig) { error("Symbol for $sig must be in the symbol table") }
+        assert(symbol.owner == property)
+        propertySymbolTable.unboundSymbols.remove(symbol)
+    }
+    private fun createBuiltInOperatorSymbol(descriptor: FunctionDescriptor, sig: IdSignature): IrSimpleFunctionSymbol {
+        return IrSimpleFunctionPublicSymbolImpl(descriptor, sig)
     }
 
     override fun referenceSimpleFunction(descriptor: FunctionDescriptor) =

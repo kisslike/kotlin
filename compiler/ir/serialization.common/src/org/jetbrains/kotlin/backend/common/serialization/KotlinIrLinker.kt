@@ -126,7 +126,8 @@ abstract class KotlinIrLinker(
 
     protected val globalDeserializationState = DeserializationState.SimpleDeserializationState { true }
     private val modulesWithReachableTopLevels = mutableSetOf<IrModuleDeserializer>()
-    private val fakeOverrideBuilder = FakeOverrideBuilder(symbolTable, signaturer, globalDeserializationState)
+    //private val fakeOverrideBuilder = FakeOverrideBuilder(symbolTable, signaturer, globalDeserializationState)
+    private val haveSeen = mutableSetOf<IrSymbol>()
 
     //TODO: This is Native specific. Eliminate me.
     private val forwardDeclarations = mutableSetOf<IrSymbol>()
@@ -175,7 +176,7 @@ abstract class KotlinIrLinker(
             fun deserializeDeclaration(idSig: IdSignature): IrDeclaration {
                 return deserializeDeclaration(loadTopLevelDeclarationProto(idSig), file).also {
                     if (it is IrClass) {
-                        fakeOverrideBuilder.needsFakeOverride(it, getStateForID(idSig) as DeserializationState<IdSignature>)
+                      //  fakeOverrideBuilder.needsFakeOverride(it, getStateForID(idSig) as DeserializationState<IdSignature>)
                     }
                 }
             }
@@ -357,6 +358,8 @@ abstract class KotlinIrLinker(
                     val symbol = referenceDeserializedSymbol(symbolKind, idSignature, descriptor).let {
                         if (expectUniqIdToActualUniqId[idSignature] != null) wrapInDelegatedSymbol(it) else it
                     }
+
+                    haveSeen.add(symbol)
 
                     if (idSignature in expectUniqIdToActualUniqId.keys) expectSymbols[idSignature] = symbol
                     if (idSignature in expectUniqIdToActualUniqId.values) actualSymbols[idSignature] = symbol
@@ -661,13 +664,31 @@ abstract class KotlinIrLinker(
         }
 
         val topLevelSignature = signature.topLevelSignature()
+/*
+        if (topLevelSignature.isClass) {
+            val classSymbol = symbolTable.referenceClassFromLinker(WrappedClassDescriptor(), topLevelSignature)
+            println("classSymbol: ${classSymbol.descriptor} ${classSymbol}")
+            if (classSymbol.isBound) {
+                // This looks like a fake override.
+                println("classSYmbol is Bound returning null")
+                return null
+            }
+        }
+*/
+
+        if (haveSeen.contains(symbol)) {
+            println("Fake override suspect: ${(symbol as? IrSimpleFunctionPublicSymbolImpl)?.signature}")
+            return null
+        }
+        haveSeen.add(symbol)
+
         val moduleDeserializer = resolveModuleDeserializer(descriptor.module) ?: return null
 
         moduleDeserializer.addModuleReachableTopLevel(topLevelSignature)
 
         deserializeAllReachableTopLevels()
 
-        fakeOverrideBuilder.buildFakeOverrides()
+        //fakeOverrideBuilder.buildFakeOverrides()
         return descriptor
     }
 
@@ -676,32 +697,41 @@ abstract class KotlinIrLinker(
         if (!symbol.isPublicApi) return null
 
         println("getDeclaration asked for ${symbol.descriptor} for $symbol")
-        if (symbol is IrSimpleFunctionPublicSymbolImpl) println("which is ${symbol.signature}")
+        if (symbol is IrBindablePublicSymbolBase<*, *>) println("which is ${symbol.signature}")
 
         if (!symbol.isBound) {
             println("getDeclaration: ${symbol.descriptor} is not bound yet")
+
 /*
-            if (symbol is IrSimpleFunctionSymbol &&
-                symbol.descriptor.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+            if (symbol is IrSimpleFunctionPublicSymbolImpl) {
+
+                val signature = symbol.signature
+                val topLevelSignature = signature.topLevelSignature()
+
+                if (topLevelSignature != signature &&
+                    symbolTable.referenceClassFromLinker(WrappedClassDescriptor(), topLevelSignature).isBound) {
 
                 val parentDescriptor = symbol.descriptor.containingDeclaration as ClassDescriptor
                 val parentSymbol =  symbolTable.referenceClass(parentDescriptor)
                 findDeserializedDeclarationForSymbol(parentSymbol)
                 return null
             }
+            }
 */
             findDeserializedDeclarationForSymbol(symbol) ?: return null
         }
 
-        println("getDeclaration: Bound to ${ir2string(symbol.owner)}")
+        if (symbol.isBound) println("getDeclaration: Bound to ${ir2string(symbol.owner)}")
 
         // TODO: we do have serializations for those, but let's just create a stub for now.
         if (!symbol.isBound && (symbol.descriptor.isExpectMember || symbol.descriptor.containingDeclaration?.isExpectMember == true))
             return null
 
-        assert(symbol.isBound) {
-            "getDeclaration: symbol $symbol is unbound, descriptor = ${symbol.descriptor}, signature = ${symbol.signature}"
-        }
+        if (!symbol.isBound) return null
+
+        //assert(symbol.isBound) {
+        //    "getDeclaration: symbol $symbol is unbound, descriptor = ${symbol.descriptor}, signature = ${symbol.signature}"
+        //}
 
         return symbol.owner as IrDeclaration
     }

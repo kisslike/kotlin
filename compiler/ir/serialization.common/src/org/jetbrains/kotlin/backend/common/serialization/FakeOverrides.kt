@@ -4,16 +4,17 @@ import org.jetbrains.kotlin.backend.common.DescriptorsToIrRemapper
 import org.jetbrains.kotlin.backend.common.WrappedDescriptorPatcher
 import org.jetbrains.kotlin.backend.common.ir.ir2string
 import org.jetbrains.kotlin.backend.common.serialization.signature.IdSignatureSerializer
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.Visibilities.INHERITED
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
+import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.symbols.*
-import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionPublicSymbolImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
@@ -21,37 +22,12 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.multiplatform.findActuals
 
-class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignatureSerializer, val globalDeserializationState: KotlinIrLinker.DeserializationState<IdSignature>) {
-    private val needFakeOverrides = mutableListOf<IrClass>()
-    private val haveFakeOverrides = mutableListOf<IrClass>()
+class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignatureSerializer, val irBuiltIns: IrBuiltIns) {
+    //private val needFakeOverrides = mutableListOf<IrClass>()
+    private val haveFakeOverrides = mutableSetOf<IrClass>()
     private val deserializationStateForClass = mutableMapOf<IrClass, KotlinIrLinker.DeserializationState<IdSignature>>()
 
-    fun needsFakeOverride(clazz: IrClass, deserializationState: KotlinIrLinker.DeserializationState<IdSignature>) {
- /*       if (!clazz.symbol.isPublicApi) return
-        println("NEEDS FAKE OVERRIDE: ${clazz.symbol.descriptor} ${clazz.symbol.signature}")
-        deserializationStateForClass.put(clazz, deserializationState)
-        needFakeOverrides += clazz
-   */
-        clazz.acceptVoid(object : IrElementVisitorVoid {
-            override fun visitElement(element: IrElement) {
-                element.acceptChildrenVoid(this)
-            }
-            override fun visitClass(declaration: IrClass) {
-                println("visiting: ${declaration.name} ${declaration.symbol}")
-                if  (declaration.symbol.isPublicApi) {
-                    println("NEEDS FAKE OVERRIDE: ${clazz.symbol.descriptor} ${clazz.symbol.signature}")
-
-                    deserializationStateForClass.put(declaration, deserializationState)
-                    needFakeOverrides += declaration
-                }
-                super.visitClass(declaration)
-            }
-        })
-
-    }
     private fun fakeOverrideMember(superType: IrType, member: IrDeclaration, clazz: IrClass): IrDeclaration {
         if (superType !is IrSimpleType) error("superType is $superType, expected IrSimpleType")
         val classifier = superType.classifier
@@ -66,160 +42,209 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         }
 
         val substitutionMap = typeParameters.zip(typeArguments).toMap()
-        val copier = DeepCopyIrTreeWithSymbolsForFakeOverrides(substitutionMap, clazz)
+        val copier = DeepCopyIrTreeWithSymbolsForFakeOverrides(substitutionMap, superType, clazz)
 
-        require(member is IrOverridableDeclaration<*>)
-        val deepCopyFakeOverride = copier.copy(member)
-        require(deepCopyFakeOverride is IrOverridableDeclaration<*>)
+        //require(member is IrOverridableDeclaration<*>)
+        require(member is IrProperty || member is IrSimpleFunction)
+        val deepCopyFakeOverride = copier.copy(member) as IrDeclaration
+        //require(deepCopyFakeOverride is IrOverridableDeclaration<*>)
+        require(deepCopyFakeOverride is IrProperty || deepCopyFakeOverride is IrSimpleFunction)
         deepCopyFakeOverride.parent = clazz
-        require(deepCopyFakeOverride is IrSymbolDeclaration<*>)
+        require(deepCopyFakeOverride is IrSymbolOwner)
         assert(deepCopyFakeOverride.symbol.owner == deepCopyFakeOverride)
-        assert((deepCopyFakeOverride.symbol.descriptor as? WrappedSimpleFunctionDescriptor)?.owner == deepCopyFakeOverride)
+        assert((deepCopyFakeOverride.symbol.descriptor as? WrappedDeclarationDescriptor<*>)?.owner == deepCopyFakeOverride)
 
         return deepCopyFakeOverride
     }
 
-    private val IrDeclaration.isFakeOverride: Boolean
-        get () = when (this) {
-            is IrSimpleFunction -> this.isFakeOverride
-            is IrProperty -> this.isFakeOverride
-            is IrField -> this.isFakeOverride
-            else -> false
-        }
 
-    private val IrDeclaration.overriddenSymbols: List<IrSymbol>
-        get() = when (this) {
-            is IrSimpleFunction -> this.overriddenSymbols
-            is IrProperty -> this.overriddenSymbols
-            is IrField -> this.overriddenSymbols
-            else -> emptyList()
-        }
-
-    // TODO: make me non-recursive.
-    private fun buildFakeOverridesForClass(clazz: IrClass) {
-        if (haveFakeOverrides.contains(clazz)) return
-        if (clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.Function") ||
-            clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.reflect.KFunction") ||
-            clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.reflect.KProperty") ||
-            clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.reflect.KMutableProperty") ||
-            clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.native.internal.KMutableProperty") ||
-            clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.native.internal.KLocalDelegatedProperty") ||
-            clazz.descriptor.fqNameSafe.toString().startsWith("kotlin.native.internal.KLocalDelegatedMutableProperty")
-
-        ) return
-
-        clazz.superTypes.forEach {
-            it.classOrNull?.let {
-                if (it.isBound) {
-                    val superClass = it.owner
-                    buildFakeOverridesForClass(superClass)
-                    haveFakeOverrides.add(superClass)
-                } else println("Somehow unbound symbol for ${it.descriptor}")
-            }
-        }
-
-        println("\n\nWould bring fake overrides to ${ir2string(clazz)}:")
-
-        val allOverridden = clazz.declarations
-            .filter { it is IrSimpleFunction }
-            .filterIsInstance<IrOverridableDeclaration<*>>()
-            .filterNot { it.isFakeOverride }
-            .flatMap { (it as IrSimpleFunction).overriddenSymbols }
-            .map { if (it.isBound) it.owner else null }
-        println("\tOverridden symbol declarations: ${allOverridden.map { it?.name }}")
-
-        val nullableComparator = Comparator<Long?> { a, b ->
-            when {
-                (a == null) && (b == null) -> 0
-                a == null -> -1
-                b == null -> 1
-                a > b -> 1
-                a < b -> -1
-                else -> 0
-            }
-        }
-
-
-        clazz.declarations.filter {
-            it is IrFunction// && it.isFakeOverride
-        }.also {
-            println("\t\t\tDESER: ${it.map{ir2string(it)}}")
-        }.map {
-            try {
-                signaturer.composePublicIdSignature(it)
-            } catch (e: Throwable) {
-                println("processed exception: " + e.message)
-                null
-            }
-        }/*.sortedWith(nullableComparator)*/.let {
-            println("\t\t\tDESER: $it")
-        }
-
-        val newFakeOverrides = mutableListOf<IrDeclaration>()
-        clazz.superTypes.forEach { superType ->
-            superType.classOrNull?.let {
-                if (it.isBound) {
-                    val superClass = it.owner
-                    println("\tfrom ${ir2string(superClass)}:")
-                    superClass.declarations
-                        .filterIsInstance<IrOverridableDeclaration<*>>()
-                        .filter { (it as IrSymbolDeclaration<*>).symbol.isPublicApi }
-                        .filterNot { allOverridden.filterNotNull().contains(it) }
-                        .map {
-                            fakeOverrideMember(superType, it, clazz).also {
-                                newFakeOverrides.add(it)
-                            }
-                        }.also {
-                            println("\t\t\tSYNTH: ${it.map{ir2string(it)}}")
-                        }.map {
-                            signaturer.composePublicIdSignature(it)
-                        }/*.sortedWith(nullableComparator)*/.let {
-                            println("\t\t\tSYNTH: $it")
-                        }
-                } else println("ditto")
-            }
-        }
-
-        newFakeOverrides
-            .distinctBy { signaturer.composePublicIdSignature(it) }
-            .forEach { fake ->
-                require(fake is IrSimpleFunction)
-                val properSignature = signaturer.composePublicIdSignature(fake)
-                val deserializationState = deserializationStateForClass[clazz.findTopLevelDeclaration()] ?: error("No state for ${ir2string(clazz)}")
-
-                val deserializedSymbol = deserializationState.deserializedSymbols[properSignature]
-                if (deserializedSymbol != null) {
-                    if ((fake as IrFunction).symbol !is IrDelegatingSimpleFunctionSymbolImpl) {
-                        error("Somebody elses fake override: in ${ir2string(clazz)} ${ir2string(fake)} ${(fake as IrFunction).symbol}")
-                    }
-                    println("Redelegating ${(fake as IrFunction).name.asString()} to $deserializedSymbol")
-                    ((fake as IrFunction).symbol as IrDelegatingSimpleFunctionSymbolImpl).delegate =
-                        deserializedSymbol as IrSimpleFunctionSymbol
-                    println("binding (state for class) in ${ir2string(clazz)} fake ${ir2string(fake)}")
-                    deserializedSymbol.bind(fake)
-                    (deserializedSymbol.descriptor as? WrappedSimpleFunctionDescriptor)?.bind(fake)
-
-                } else {
-                    println("No symbols for ${(fake as IrFunction).name.asString()} yet, couldn't redelegate.")
-                    println("Placing ${(fake as IrFunction).symbol} ${signaturer.composePublicIdSignature(fake)} to state ${deserializationStateForClass[clazz]}")
-                    val symbolWithProperSignature = symbolTable.referenceSimpleFunctionFromLinker((fake as IrFunction).symbol.descriptor, properSignature)
-                    ((fake as IrFunction).symbol as IrDelegatingSimpleFunctionSymbolImpl).delegate = symbolWithProperSignature
-                    deserializationState.deserializedSymbols[properSignature] = symbolWithProperSignature
-                    println("binding $symbolWithProperSignature to ${ir2string(fake)}")
-                    symbolWithProperSignature.bind(fake)
-                }
-                clazz.declarations.add(fake)
-                println("Declaring ${fake.symbol} ${fake.symbol.signature} to be ${ir2string(fake)}")
-                symbolTable.declareSimpleFunctionFromLinker(fake.symbol.descriptor, fake.symbol.signature, { fake })
-            }
+    private val IrDeclaration.modality get() = when(this) {
+        is IrProperty -> this.modality
+        is IrSimpleFunction -> this.modality
+        else -> error("Could not take modality of ${this.render()}")
     }
 
-    fun buildFakeOverrides() {
-        needFakeOverrides.forEach {
+    // TODO: make me non-recursive.
+    fun buildFakeOverridesForClass(clazz: IrClass) {
+        if (haveFakeOverrides.contains(clazz)) return
+
+        val superTypes = clazz.superTypes
+
+        val superClasses = superTypes.map {
+            it.classifierOrNull?.owner as IrClass?
+        }.filterNotNull()
+
+        superClasses.forEach {
             buildFakeOverridesForClass(it)
             haveFakeOverrides.add(it)
         }
-        needFakeOverrides.clear()
+
+        println("\n\nWould bring fake overrides to ${ir2string(clazz)}:")
+        superTypes.forEach {
+            println("\tSUPERTYPE: ${it.render()}")
+        }
+
+        val overridePairs = superTypes.flatMap { superType ->
+            val superClass = superType.classifierOrNull?.owner as IrClass? // TODO: What if there's no class?
+            val overriddenMembers = superClass!!.declarations
+                .filter { it is IrSimpleFunction || it is IrProperty }
+                //.filterIsInstance<IrOverridableDeclaration<*>>()
+                .filter { (it as IrSymbolOwner).symbol.isPublicApi }
+            val overrides = overriddenMembers.map { overridden ->
+                val override = fakeOverrideMember(superType, overridden, clazz)
+                Triple(overridden, override, signaturer.composePublicIdSignature(override))
+            }
+            overrides
+        }
+
+        val existingMembers = clazz.declarations
+            //.filterIsInstance<IrOverridableDeclaration<*>>()
+            .filter{ it is IrProperty || it is IrSimpleFunction }
+            .filter { (it as IrSymbolOwner).symbol.isPublicApi }
+
+        val existingIdSignatures = existingMembers
+            .map { signaturer.composePublicIdSignature(it) }
+
+        println("DESER: ${existingMembers.map {ir2string(it)}}")
+        println("DESER: $existingIdSignatures")
+
+        val uniqOverridePairs = overridePairs.groupBy(
+            { it.third },
+            { Pair(it.first, it.second) }
+        ).filter { entry ->
+            entry.key !in existingIdSignatures
+        }.filter { entry ->
+            print("OVERRIDDEN:");  println(entry.value.map { it.first.render() } )
+            print("NON ABSTRACT first"); println(entry.value.firstOrNull{it.first.modality != Modality.ABSTRACT}?.first?.render())
+            print("NON ABSTRACT second"); println(entry.value.firstOrNull{it.first.modality != Modality.ABSTRACT}?.second?.render())
+            val fake =
+                entry.value.firstOrNull{it.first.modality != Modality.ABSTRACT}?.second ?:
+                entry.value.first().second
+            existingMembers.none { it.overrides(fake) }
+        }
+
+        println("SYNTH: ${uniqOverridePairs.keys}")
+
+
+        val fakeOverrides = uniqOverridePairs.values
+            .map {
+                val singleFakeOverride = it.firstOrNull{it.first.modality != Modality.ABSTRACT}?.second ?: it.first().second
+                when (singleFakeOverride) {
+                    is IrFunctionImpl -> {
+                        val overriddenSymbols = it.map { (it.first as IrSimpleFunction).symbol }
+                        singleFakeOverride.overriddenSymbols.addAll(overriddenSymbols)
+                        println("overriddenSymbols for ${singleFakeOverride.render()}")
+                        println(overriddenSymbols.map{it.owner.render()})
+                    }
+                    is IrProperty ->
+                        {
+                            // TODO: what to do here?
+                        }
+                    else -> error("No overridden symbols for ${ir2string(singleFakeOverride)}")
+                }
+                singleFakeOverride
+            }
+
+        println("SYNTH: ${fakeOverrides.map {ir2string(it)}}")
+
+        fun redelegateFunction(fake: IrSimpleFunction) {
+            val properSignature = signaturer.composePublicIdSignature(fake)
+
+            val deserializedSymbol =
+                symbolTable.referenceSimpleFunctionFromLinker(WrappedSimpleFunctionDescriptor(), properSignature)
+
+            (fake.symbol as? IrDelegatingSimpleFunctionSymbolImpl)?.let {
+                println("Redelegating ${fake.nameForIrSerialization} to $deserializedSymbol")
+                it.delegate = deserializedSymbol
+            } ?: error("Somebody else's fake override: in ${ir2string(clazz)} ${ir2string(fake)} ${fake.symbol}")
+
+            if (!deserializedSymbol.isBound) {
+                println("binding $deserializedSymbol to $fake ${ir2string(fake)}")
+                deserializedSymbol.bind(fake)
+                symbolTable.rebindSimpleFunction(properSignature, fake)
+            } else println("symbol is already bound to ${ir2string(deserializedSymbol.owner)}")
+
+            (deserializedSymbol.descriptor as? WrappedSimpleFunctionDescriptor)?.let {
+                if (!it.isBound()) it.bind(fake)
+            }
+        }
+
+        fun redelegateProperty(fake: IrProperty) {
+            val properSignature = signaturer.composePublicIdSignature(fake)
+
+            val deserializedSymbol =
+                symbolTable.referencePropertyFromLinker(WrappedPropertyDescriptor(), properSignature)
+
+            (fake.symbol as? IrDelegatingPropertySymbolImpl)?.let {
+                println("Redelegating ${fake.nameForIrSerialization} to $deserializedSymbol")
+                it.delegate = deserializedSymbol
+            } ?: error("Somebody else's fake override: in ${ir2string(clazz)} ${ir2string(fake)} ${fake.symbol}")
+
+            if (!deserializedSymbol.isBound) {
+                println("binding $deserializedSymbol to $fake ${ir2string(fake)}")
+                deserializedSymbol.bind(fake)
+                symbolTable.rebindProperty(properSignature, fake)
+            } else println("symbol is already bound to ${ir2string(deserializedSymbol.owner)}")
+
+            (deserializedSymbol.descriptor as? WrappedPropertyDescriptor)?.let {
+                if (!it.isBound()) it.bind(fake)
+            }
+
+            fake.getter?.let { redelegateFunction(it) }
+            fake.setter?.let { redelegateFunction(it) }
+        }
+
+        fakeOverrides.forEach { fake ->
+            when (fake) {
+                is IrSimpleFunction -> redelegateFunction(fake)
+                is IrProperty -> redelegateProperty( fake)
+            }
+            clazz.declarations.add(fake)
+        }
+    }
+
+    fun IrDeclaration.overrides(other: IrDeclaration): Boolean {
+        when (this) {
+            is IrSimpleFunction -> {
+                if (other !is IrSimpleFunction) return false
+                if (this.name != other.name) return false
+                this.valueParameters.forEachIndexed { index, parameter ->
+                    if (!other.valueParameters[index].type.equals(parameter.type)) return false
+                }
+                if (this.typeParameters.size != other.typeParameters.size) return false
+                if (!this.returnType.isSubtypeOf(other.returnType, irBuiltIns)) return false
+
+                return true
+            }
+            is IrProperty -> {
+                if (other !is IrProperty) return false
+                if (this.name != other.name) return false
+                // TODO: We assume getter always exists for a property here.
+                if (!this.getter!!.returnType.isSubtypeOf(other.getter!!.returnType, irBuiltIns)) return false
+
+                return true
+            }
+            else -> return false
+        }
+    }
+
+    fun provideFakeOverrides(module: IrModuleFragment) {
+        module.acceptVoid(object : IrElementVisitorVoid {
+            override fun visitElement(element: IrElement) {
+                element.acceptChildrenVoid(this)
+            }
+            override fun visitClass(declaration: IrClass) {
+                if (declaration.symbol.isPublicApi) {
+                    buildFakeOverridesForClass(declaration)
+                    haveFakeOverrides.add(declaration)
+                }
+                super.visitClass(declaration)
+            }
+            override fun visitFunction(declaration: IrFunction) {
+                // Don't go for local classes
+                return
+            }
+        })
     }
 }
 
@@ -229,7 +254,8 @@ private fun IrType.render(): String = RenderIrElementVisitor().renderType(this)
 // This is basicly modelled after the inliner copier.
 class DeepCopyIrTreeWithSymbolsForFakeOverrides(
     val typeArguments: Map<IrTypeParameterSymbol, IrType?>?,
-    val parent: IrDeclarationParent?
+    val superType: IrType,
+    val parent: IrClass
 ) {
 
     fun copy(irElement: IrElement): IrElement {
@@ -249,7 +275,7 @@ class DeepCopyIrTreeWithSymbolsForFakeOverrides(
         return result
     }
 
-    private inner class InlinerTypeRemapper(
+    private inner class FakeOverrideTypeRemapper(
         val symbolRemapper: SymbolRemapper,
         val typeArguments: Map<IrTypeParameterSymbol, IrType?>?
     ) : TypeRemapper {
@@ -287,7 +313,7 @@ class DeepCopyIrTreeWithSymbolsForFakeOverrides(
         }
     }
 
-    private class SymbolRemapperImpl(descriptorsRemapper: DescriptorsRemapper) : DeepCopySymbolRemapper(descriptorsRemapper) {
+    private class FakeOverrideSymbolRemapperImpl(descriptorsRemapper: DescriptorsRemapper) : DeepCopySymbolRemapper(descriptorsRemapper) {
 
         var typeArguments: Map<IrTypeParameterSymbol, IrType?>? = null
             set(value) {
@@ -305,27 +331,47 @@ class DeepCopyIrTreeWithSymbolsForFakeOverrides(
         }
     }
 
-    private val symbolRemapper = SymbolRemapperImpl(DescriptorsToIrRemapper)
+    private val symbolRemapper = FakeOverrideSymbolRemapperImpl(DescriptorsToIrRemapper)
     private val copier =
-        DeepCopyIrTreeForFakeOverrides(symbolRemapper, InlinerTypeRemapper(symbolRemapper, typeArguments), SymbolRenamer.DEFAULT)
+        DeepCopyIrTreeForFakeOverrides(symbolRemapper, FakeOverrideTypeRemapper(symbolRemapper, typeArguments), SymbolRenamer.DEFAULT, parent)
 }
 
 class DeepCopyIrTreeForFakeOverrides(
     val symbolRemapper: SymbolRemapper,
     val typeRemapper: TypeRemapper,
-    val symbolRenamer: SymbolRenamer
+    val symbolRenamer: SymbolRenamer,
+    val destinationClass: IrClass
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
 
     private fun <T : IrFunction> T.transformFunctionChildren(declaration: T): T =
         apply {
             transformAnnotations(declaration)
             copyTypeParametersFrom(declaration)
+            //val dispatchReceiver =
             typeRemapper.withinScope(this) {
+/*
+                val superDispatchReceiver = declaration.dispatchReceiverParameter!!
+                val dispatchReceiverSymbol = IrValueParameterSymbolImpl(WrappedValueParameterDescriptor())
+                val dispatchReceiverType = destinationClass.defaultType
+                dispatchReceiverParameter = IrValueParameterImpl(
+                    superDispatchReceiver.startOffset,
+                    superDispatchReceiver.endOffset,
+                    superDispatchReceiver.origin,
+                    dispatchReceiverSymbol,
+                    superDispatchReceiver.name,
+                    superDispatchReceiver.index,
+                    dispatchReceiverType,
+                    null,
+                    superDispatchReceiver.isCrossinline,
+                    superDispatchReceiver.isNoinline
+                )
+
+ */
+                // Should fake override's receiver be the current class is an open question.
                 dispatchReceiverParameter = declaration.dispatchReceiverParameter?.transform()
                 extensionReceiverParameter = declaration.extensionReceiverParameter?.transform()
                 returnType = typeRemapper.remapType(declaration.returnType)
                 declaration.valueParameters.transformTo(valueParameters)
-                // And there are no bodies for fake overrides.
             }
         }
 
@@ -333,10 +379,9 @@ class DeepCopyIrTreeForFakeOverrides(
         IrFunctionImpl(
             declaration.startOffset, declaration.endOffset,
             IrDeclarationOrigin.FAKE_OVERRIDE,
-            (wrapInDelegatedSymbol(symbolRemapper.getDeclaredFunction(declaration.symbol)) as IrSimpleFunctionSymbol).also {
-                println("Wrapping ${declaration.nameForIrSerialization} into delegating symbol")
-            },
+            (wrapInDelegatedSymbol(symbolRemapper.getDeclaredFunction(declaration.symbol)) as IrSimpleFunctionSymbol),
             symbolRenamer.getFunctionName(declaration.symbol),
+            //INHERITED,
             declaration.visibility,
             declaration.modality,
             declaration.returnType,
@@ -348,9 +393,34 @@ class DeepCopyIrTreeForFakeOverrides(
             isFakeOverride = true,
             isOperator = declaration.isOperator
         ).apply {
-            declaration.overriddenSymbols.mapTo(overriddenSymbols) {
-                symbolRemapper.getReferencedFunction(it) as IrSimpleFunctionSymbol
-            }
+            //declaration.overriddenSymbols.mapTo(overriddenSymbols) {
+            //   symbolRemapper.getReferencedFunction(it) as IrSimpleFunctionSymbol
+            //}
             transformFunctionChildren(declaration)
+        }
+
+    override fun visitProperty(declaration: IrProperty): IrProperty =
+        IrPropertyImpl(
+            declaration.startOffset, declaration.endOffset,
+            IrDeclarationOrigin.FAKE_OVERRIDE,
+            (wrapInDelegatedSymbol(symbolRemapper.getDeclaredProperty(declaration.symbol)) as IrPropertySymbol),
+            declaration.name,
+            //INHERITED,
+            declaration.visibility,
+            declaration.modality,
+            isVar = declaration.isVar,
+            isConst = declaration.isConst,
+            isLateinit = declaration.isLateinit,
+            isDelegated = declaration.isDelegated,
+            isExpect = declaration.isExpect,
+            isExternal = declaration.isExternal
+        ).apply {
+            transformAnnotations(declaration)
+            //this.backingField = declaration.backingField?.transform()
+            this.getter = declaration.getter?.transform()
+            this.setter = declaration.setter?.transform()
+            //this.backingField?.let {
+            //    it.correspondingPropertySymbol = symbol
+            //}
         }
 }

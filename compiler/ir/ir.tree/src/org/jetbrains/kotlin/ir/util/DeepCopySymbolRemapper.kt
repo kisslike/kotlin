@@ -100,20 +100,7 @@ open class DeepCopySymbolRemapper(
     }
 
     override fun visitSimpleFunction(declaration: IrSimpleFunction) {
-/*        println("Deep Copy visiting ${declaration.name.toString()}")
-
-        println("declaration = $declaration")
-        println("declaration.symbol = ${declaration.symbol}")
-        println("declaration.symbol.delegate = ${(declaration.symbol as? IrDelegatingSimpleFunctionSymbolImpl)?.delegate}")
-        println("declaration.symbol.descriptor = ${declaration.symbol.descriptor}")
-        println("declaration.symbol.delegate.descriptor = ${(declaration.symbol as? IrDelegatingSimpleFunctionSymbolImpl)?.delegate?.descriptor}")
-        println("declaration.symbol.owner = ${declaration.symbol.owner}")
-        println("declaration.symbol.delegate.owner = ${(declaration.symbol as? IrDelegatingSimpleFunctionSymbolImpl)?.delegate?.owner}")
-        println("declaration.symbol.descriptor.owner = ${(declaration.symbol.descriptor as? WrappedSimpleFunctionDescriptor)?.owner}")
-        println("declaration.symbol.delegate.descriptor = ${((declaration.symbol as? IrDelegatingSimpleFunctionSymbolImpl)?.delegate?.descriptor as? WrappedSimpleFunctionDescriptor)?.owner}")
-*/
         remapSymbol(functions, declaration) {
-            println("remaping symbol: $it and its descriptor is ${it.descriptor} its owner is ${it.owner}")
             IrSimpleFunctionSymbolImpl(descriptorsRemapper.remapDeclaredSimpleFunction(it.descriptor))
         }
         declaration.acceptChildrenVoid(this)

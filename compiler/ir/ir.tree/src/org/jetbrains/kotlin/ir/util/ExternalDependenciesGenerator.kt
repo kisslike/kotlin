@@ -32,23 +32,28 @@ class ExternalDependenciesGenerator(val symbolTable: SymbolTable, private val ir
             Deserializing a reference may lead to new unbound references, so we loop until none are left.
          */
         lateinit var unbound: List<IrSymbol>
+        var combinedHash: Int = -1
         do {
+            val prevHash = combinedHash
             unbound = symbolTable.allUnbound
+            combinedHash = if (unbound.isEmpty()) 0 else unbound.map { it.hashCode() }.reduce{ x,y -> x xor y }
 
             for (symbol in unbound) {
                 // Symbol could get bound as a side effect of deserializing other symbols.
                 if (!symbol.isBound) {
                     irProviders.getDeclaration(symbol)
                 }
-                assert(symbol.isBound) { "$symbol unbound even after deserialization attempt" }
+                //assert(symbol.isBound) { "$symbol unbound even after deserialization attempt" }
             }
-        } while (unbound.isNotEmpty())
+        } while (/*unbound.isNotEmpty()*/ prevHash != combinedHash)
+
+        println("Left unbound: ${unbound.map{if (it.isPublicApi) it.signature else "NON-PUBLIC API $it"}}")
 
         irProviders.forEach { (it as? IrDeserializer)?.declareForwardDeclarations() }
     }
 }
 
-private val SymbolTable.allUnbound: List<IrSymbol>
+val SymbolTable.allUnbound: List<IrSymbol>
     get() {
         val r = mutableListOf<IrSymbol>()
         r.addAll(unboundClasses)
@@ -62,10 +67,10 @@ private val SymbolTable.allUnbound: List<IrSymbol>
         return r
     }
 
-fun List<IrProvider>.getDeclaration(symbol: IrSymbol): IrDeclaration =
+fun List<IrProvider>.getDeclaration(symbol: IrSymbol): IrDeclaration? =
     firstNotNullResult { provider ->
         provider.getDeclaration(symbol)
-    } ?: error("Could not find declaration for unbound symbol $symbol")
+    } //?: error("Could not find declaration for unbound symbol $symbol")
 
 // In most cases, IrProviders list consist of an optional deserializer and a DeclarationStubGenerator.
 fun generateTypicalIrProviderList(
