@@ -677,7 +677,7 @@ abstract class KotlinIrLinker(
 */
 
         if (haveSeen.contains(symbol)) {
-            println("Fake override suspect: ${(symbol as? IrSimpleFunctionPublicSymbolImpl)?.signature}")
+            // println("Fake override suspect: ${(symbol as? IrSimpleFunctionPublicSymbolImpl)?.signature}")
             return null
         }
         haveSeen.add(symbol)
@@ -696,8 +696,8 @@ abstract class KotlinIrLinker(
 
         if (!symbol.isPublicApi) return null
 
-        println("getDeclaration asked for ${symbol.descriptor} for $symbol")
-        if (symbol is IrBindablePublicSymbolBase<*, *>) println("which is ${symbol.signature}")
+        // println("getDeclaration asked for ${symbol.descriptor} for $symbol")
+        // if (symbol is IrBindablePublicSymbolBase<*, *>) println("which is ${symbol.signature}")
 
         if (!symbol.isBound) {
             println("getDeclaration: ${symbol.descriptor} is not bound yet")

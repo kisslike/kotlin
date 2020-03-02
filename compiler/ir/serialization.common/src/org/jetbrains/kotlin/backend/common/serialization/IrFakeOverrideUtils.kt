@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.util.isReal
 import org.jetbrains.kotlin.ir.util.original
+import org.jetbrains.kotlin.ir.util.resolveFakeOverride
 
 // We may get several real supers here (e.g. see the code snippet from KT-33034).
 // TODO: Consider reworking the resolution algorithm to get a determined super declaration.
@@ -50,7 +51,7 @@ private fun <S: IrBindableSymbol<*, D>, D: IrOverridableDeclaration<S>> D.getRea
 
     return realSupers
 }
-
+/*
 /**
  * Implementation of given method.
  *
@@ -65,9 +66,10 @@ fun IrSimpleFunction.resolveFakeOverride(allowAbstract: Boolean = false): IrSimp
         realSupers.single { it.modality != Modality.ABSTRACT }
     }
 }
+*/
 
 val IrSimpleFunction.target: IrSimpleFunction
-    get() = (if (modality == Modality.ABSTRACT) this else resolveFakeOverride()).original
+    get() = (if (modality == Modality.ABSTRACT) this else resolveFakeOverride()!!)
 
 val IrFunction.target: IrFunction get() = when (this) {
     is IrSimpleFunction -> this.target
