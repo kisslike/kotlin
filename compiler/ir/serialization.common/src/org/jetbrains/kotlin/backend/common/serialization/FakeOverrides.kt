@@ -91,8 +91,8 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         val existingIdSignatures = existingMembers
             .map { signaturer.composePublicIdSignature(it) }
 
-        // TODO: why there is no .overriddenSymbols in IrPropertyImpl?
         val propertyOverriddenSymbols = mutableMapOf<IrProperty, MutableList<IrPropertySymbol>>()
+        val functionOverriddenSymbols = mutableMapOf<IrSimpleFunction, MutableList<IrSimpleFunctionSymbol>>()
 
         val overrideCandidates = superTypes.flatMap { superType ->
             val superClass = superType.classifierOrNull?.owner as IrClass? // TODO: What if there's no class?
@@ -104,11 +104,12 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                 val override = fakeOverrideMember(superType, overridden, clazz)
                 when (override) {
                     is IrSimpleFunction -> {
-                        override.overriddenSymbols.add((overridden as IrSimpleFunction).symbol)
+                        functionOverriddenSymbols.put(override, mutableListOf((overridden as IrSimpleFunction).symbol))
                     }
                     is IrProperty -> {
                         propertyOverriddenSymbols.put(override, mutableListOf((overridden as IrProperty).symbol))
                     }
+                    else -> error("Unexpected ")
                 }
                 override
                 // Triple(overridden, override, signaturer.composePublicIdSignature(override))
@@ -131,7 +132,7 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                 if (existingCandidate.overrides(candidate, considerModality = true)) {
                     when (existingCandidate) {
                         is IrSimpleFunction -> {
-                            existingCandidate.overriddenSymbols.addAll((candidate as IrSimpleFunction).overriddenSymbols)
+                            functionOverriddenSymbols[existingCandidate]!!.addAll(functionOverriddenSymbols[candidate]!!)
                         }
                         is IrProperty -> {
                             propertyOverriddenSymbols[existingCandidate]!!.addAll(propertyOverriddenSymbols[candidate]!!)
@@ -144,7 +145,7 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                     mergedOverrideCandidates[index] = candidate
                     when (candidate) {
                         is IrSimpleFunction -> {
-                            candidate.overriddenSymbols.addAll((oldOverrideCandidate as IrSimpleFunction).overriddenSymbols)
+                            functionOverriddenSymbols[candidate]!!.addAll(functionOverriddenSymbols[oldOverrideCandidate]!!)
                         }
                         is IrProperty -> {
                             propertyOverriddenSymbols[candidate]!!.addAll(propertyOverriddenSymbols[oldOverrideCandidate]!!)
@@ -195,14 +196,14 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
             .map { singleFakeOverride ->
                 when (singleFakeOverride) {
                     is IrFunctionImpl -> {
-                        // DO NOTHING?
+                        singleFakeOverride.overriddenSymbols = functionOverriddenSymbols[singleFakeOverride]!!
                     }
                     is IrProperty -> {
                         val overriddenProperties = propertyOverriddenSymbols[singleFakeOverride]!!
                         val overriddenGetters = overriddenProperties.map  { it.owner.getter?.symbol }.filterNotNull()
                         val overriddenSetters = overriddenProperties.map  { it.owner.setter?.symbol }.filterNotNull()
-                        singleFakeOverride.getter?.overriddenSymbols?.addAll(overriddenGetters)
-                        singleFakeOverride.setter?.overriddenSymbols?.addAll(overriddenSetters)
+                        (singleFakeOverride.getter as? IrFunctionImpl?)?.let { it.overriddenSymbols = overriddenGetters }
+                        (singleFakeOverride.setter as? IrFunctionImpl?)?.let { it.overriddenSymbols = overriddenSetters }
                     }
                     else -> error("No overridden symbols for ${ir2string(singleFakeOverride)}")
                 }
@@ -474,7 +475,7 @@ class DeepCopyIrTreeForFakeOverrides(
             typeRemapper.withinScope(this) {
 
                 val superDispatchReceiver = declaration.dispatchReceiverParameter!!
-                val dispatchReceiverSymbol = IrValueParameterSymbolImpl(WrappedValueParameterDescriptor())
+                val dispatchReceiverSymbol = IrValueParameterSymbolImpl(WrappedReceiverParameterDescriptor())
                 val dispatchReceiverType = destinationClass.defaultType
                 dispatchReceiverParameter = IrValueParameterImpl(
                     superDispatchReceiver.startOffset,
@@ -494,7 +495,7 @@ class DeepCopyIrTreeForFakeOverrides(
                 //dispatchReceiverParameter = declaration.dispatchReceiverParameter?.transform()
                 extensionReceiverParameter = declaration.extensionReceiverParameter?.transform()
                 returnType = typeRemapper.remapType(declaration.returnType)
-                declaration.valueParameters.transformTo(valueParameters)
+                this.valueParameters = declaration.valueParameters.transform()
             }
         }
 
@@ -540,6 +541,12 @@ class DeepCopyIrTreeForFakeOverrides(
         ).apply {
             transformAnnotations(declaration)
             //this.backingField = declaration.backingField?.transform()
+            if (declaration.name.toString() == "returnType") {
+                println("COPY: ${declaration.render()}")
+                println("COPY: getter ${declaration.getter?.render()}")
+                println("COPY: receiver ${declaration.getter?.dispatchReceiverParameter?.render()}")
+
+            }
             this.getter = declaration.getter?.transform()
             this.setter = declaration.setter?.transform()
             //this.backingField?.let {

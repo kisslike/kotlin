@@ -34,8 +34,13 @@ object DescriptorsToIrRemapper : DescriptorsRemapper {
             else -> WrappedSimpleFunctionDescriptor(descriptor.annotations, descriptor.source)
         }
 
-    override fun remapDeclaredProperty(descriptor: PropertyDescriptor) =
-        WrappedPropertyDescriptor(descriptor.annotations, descriptor.source)
+    override fun remapDeclaredProperty(descriptor: PropertyDescriptor): WrappedPropertyDescriptor {
+        if (descriptor.name.toString() == "returnType" && descriptor.containingDeclaration.name.toString() == "KFunction2") {
+            println("MAPPING: $descriptor")
+            println("MAPPING ${descriptor.dispatchReceiverParameter}")
+        }
+        return WrappedPropertyDescriptor(descriptor.annotations, descriptor.source)
+    }
 
     override fun remapDeclaredTypeParameter(descriptor: TypeParameterDescriptor) =
         WrappedTypeParameterDescriptor(descriptor.annotations, descriptor.source)

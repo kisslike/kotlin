@@ -10,6 +10,8 @@ import org.jetbrains.kotlin.backend.common.serialization.mangle.MangleConstant
 import org.jetbrains.kotlin.backend.common.serialization.mangle.MangleMode
 import org.jetbrains.kotlin.backend.common.serialization.mangle.collect
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyDescriptor
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.isUnit
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
@@ -260,6 +262,8 @@ abstract class DescriptorMangleComputer(protected val builder: StringBuilder, pr
         descriptor.containingDeclaration.accept(this, false)
 
         if (descriptor.isRealStatic) {
+            println("MATCHER: $descriptor")
+            if (descriptor is WrappedPropertyDescriptor) println("MATCHER: ${descriptor.owner.getter?.dispatchReceiverParameter?.descriptor}")
             builder.appendSignature(MangleConstant.STATIC_MEMBER_MARK)
         }
 
