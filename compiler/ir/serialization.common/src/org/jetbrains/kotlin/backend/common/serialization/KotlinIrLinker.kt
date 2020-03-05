@@ -370,6 +370,7 @@ abstract class KotlinIrLinker(
                     symbol.descriptor !is WrappedDeclarationDescriptor<*> &&
                     symbol.descriptor.module.isForwardDeclarationModule
                 ) {
+                    println("FORWARD ADD ${(symbol as IrClassPublicSymbolImpl).signature}")
                     forwardDeclarations.add(symbol)
                 }
 
@@ -740,6 +741,7 @@ abstract class KotlinIrLinker(
     override fun declareForwardDeclarations() {
         if (forwardModuleDescriptor == null) return
 
+        println("DECLARE FORWARD DECLARATIONS")
         val packageFragments = forwardDeclarations.map { it.descriptor.findPackage() }.distinct()
 
         // We don't bother making a real IR module here, as we have no need in it any later.
@@ -756,6 +758,7 @@ abstract class KotlinIrLinker(
             val declarations = symbols.map {
 
                 val classDescriptor = it.descriptor as ClassDescriptor
+                println("FORWARD: $classDescriptor")
                 val declaration = symbolTable.declareClass(
                     UNDEFINED_OFFSET, UNDEFINED_OFFSET, irrelevantOrigin,
                     classDescriptor,

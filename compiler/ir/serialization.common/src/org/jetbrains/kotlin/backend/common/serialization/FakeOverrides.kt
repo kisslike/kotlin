@@ -353,10 +353,10 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                         }
                         is IrClass -> if (overridden.owner !in parent.declarations) {
                             if ((overridden.owner as? IrSimpleFunction)?.correspondingPropertySymbol != null) {
-                                println("ACCESSOR UNDER CLASS\n" +
-                                        "\tin class: ${parent.render()}\n" +
-                                        "\tdeclaration: ${declaration.render()}\n" +
-                                        "\toverridden: ${overridden.owner.render()}")
+                               // println("ACCESSOR UNDER CLASS\n" +
+                               //         "\tin class: ${parent.render()}\n" +
+                               //         "\tdeclaration: ${declaration.render()}\n" +
+                               //         "\toverridden: ${overridden.owner.render()}")
                             } else {
                                 println("DETACHED OVERIDDEN DECLARATION:\n\tin class: ${parent.render()}\n\tdeclaration: ${declaration.render()}\n\toverridden: ${overridden.owner.render()}")
                             }

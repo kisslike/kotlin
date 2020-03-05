@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.library.impl.IrMemoryArrayWriter
 import org.jetbrains.kotlin.library.impl.IrMemoryDeclarationWriter
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.backend.common.serialization.proto.Actual as ProtoActual
 import org.jetbrains.kotlin.backend.common.serialization.proto.FieldAccessCommon as ProtoFieldAccessCommon
@@ -1121,7 +1122,7 @@ open class IrFileSerializer(
             .setName(serializeName(clazz.name))
 
         clazz.declarations.forEach {
-            if (it.isFakeOverride && declarationTable.signatureByDeclaration(it).isPublic )
+            if (it.isFakeOverride && declarationTable.signatureByDeclaration(it).isPublic /*&& !it.descriptor.module.*/)
                 println("SKIPPING serialization for ${it.descriptor}")
             else 
                 proto.addDeclaration(serializeDeclaration(it))

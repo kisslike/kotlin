@@ -999,9 +999,6 @@ abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBu
             val flags = ClassFlags.decode(fcode)
 
             symbolTable.declareClassFromLinker((symbol as IrClassSymbol).descriptor, signature) {
-                if (signature.toString().contains("Entry")) {
-                    println("declareClassFromLinker: $it ${it.signature} ${it.isPublicApi} ${it.signature.isPublic}")
-                }
                 IrClassImpl(
                     startOffset, endOffset, origin,
                     it,
