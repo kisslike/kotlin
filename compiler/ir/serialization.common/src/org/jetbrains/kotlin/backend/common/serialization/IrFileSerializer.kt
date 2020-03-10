@@ -1122,7 +1122,7 @@ open class IrFileSerializer(
             .setName(serializeName(clazz.name))
 
         clazz.declarations.forEach {
-            if (it.isFakeOverride && declarationTable.signatureByDeclaration(it).isPublic /*&& !it.descriptor.module.*/)
+            if (it.isFakeOverride && declarationTable.signatureByDeclaration(it).isPublic && !backendSpecificFakeOverrideFilter(clazz) )
                 println("SKIPPING serialization for ${it.descriptor}")
             else 
                 proto.addDeclaration(serializeDeclaration(it))
@@ -1215,6 +1215,7 @@ open class IrFileSerializer(
     open fun backendSpecificExplicitRoot(declaration: IrFunction) = false
     open fun backendSpecificExplicitRoot(declaration: IrClass) = false
     open fun keepOrderOfProperties(property: IrProperty): Boolean = !property.isConst
+    open fun backendSpecificFakeOverrideFilter(irClass: IrClass) = false
 
     fun serializeIrFile(file: IrFile): SerializedIrFile {
         val topLevelDeclarations = mutableListOf<SerializedDeclaration>()

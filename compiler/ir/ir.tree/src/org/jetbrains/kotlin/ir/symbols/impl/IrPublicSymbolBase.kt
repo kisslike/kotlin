@@ -24,6 +24,10 @@ abstract class IrBindablePublicSymbolBase<out D : DeclarationDescriptor, B : IrS
             "Substituted descriptor $descriptor for ${descriptor.original}"
         }
         assert(sig.isPublic)
+        if (sig.toString()  == "kotlinx.cinterop.internal/CCall.<init>|1280618353163213788[0]") {
+            println("NEW SYMBOL for $sig")
+            Throwable().printStackTrace()
+        }
     }
 
     private fun isOriginalDescriptor(descriptor: DeclarationDescriptor): Boolean =
@@ -71,6 +75,12 @@ class IrSimpleFunctionPublicSymbolImpl(descriptor: FunctionDescriptor, sig: IdSi
 class IrConstructorPublicSymbolImpl(descriptor: ClassConstructorDescriptor, sig: IdSignature) :
     IrBindablePublicSymbolBase<ClassConstructorDescriptor, IrConstructor>(descriptor, sig),
     IrConstructorSymbol {
+    init {
+        if ((descriptor !is WrappedDeclarationDescriptor<*>) && descriptor.constructedClass.name.toString() =="CCall") {
+            println("NEW")
+            Throwable().printStackTrace()
+        }
+    }
 }
 
 class IrPropertyPublicSymbolImpl(descriptor: PropertyDescriptor, sig: IdSignature) :

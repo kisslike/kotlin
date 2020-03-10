@@ -79,9 +79,9 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         }
 
         println("\n\nWould bring fake overrides to ${ir2string(clazz)}:")
-        superTypes.forEach {
-            println("\tSUPERTYPE: ${it.render()}")
-        }
+        //superTypes.forEach {
+        //    println("\tSUPERTYPE: ${it.render()}")
+        //}
 
         val existingMembers = clazz.declarations
             //.filterIsInstance<IrOverridableDeclaration<*>>()
@@ -117,10 +117,10 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
             overrides
         }
 
-        println("\nOVERRIDE CANDIDATES")
-        overrideCandidates.forEach {
-            println(it.render())
-        }
+       //println("\nOVERRIDE CANDIDATES")
+        //overrideCandidates.forEach {
+        //    println(it.render())
+        //}
 
 
         val mergedOverrideCandidates = arrayListOf<IrDeclaration>()
@@ -165,32 +165,16 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
             mergedOverrideCandidates.updateMergedCandidatesWith(candidate)
         }
 
-        println("\nMERGED OVERRIDE CANDIDATES")
-        mergedOverrideCandidates.forEach {
-            println(it.render())
-        }
+        //println("\nMERGED OVERRIDE CANDIDATES")
+        //mergedOverrideCandidates.forEach {
+        //    println(it.render())
+        //}
 
-        println("\nDESER:\n\t${existingMembers.map {ir2string(it)}.joinToString("\n\t")}")
-        println("DESER:\n\t${existingIdSignatures.joinToString("\n\t")}}")
+        //println("\nDESER:\n\t${existingMembers.map {ir2string(it)}.joinToString("\n\t")}")
+        //println("DESER:\n\t${existingIdSignatures.joinToString("\n\t")}}")
 
-        /*
-        val uniqOverridePairs = mergedOverridePairs.groupBy(
-            { it.third },
-            { Pair(it.first, it.second) }
-        ).filter { entry ->
-            entry.key !in existingIdSignatures
-        }.filter { entry ->
-            print("OVERRIDDEN:");  println(entry.value.map { it.first.render() } )
-            print("NON ABSTRACT first"); println(entry.value.firstOrNull{it.first.modality != Modality.ABSTRACT}?.first?.render())
-            print("NON ABSTRACT second"); println(entry.value.firstOrNull{it.first.modality != Modality.ABSTRACT}?.second?.render())
-            val fake =
-                entry.value.firstOrNull{it.first.modality != Modality.ABSTRACT}?.second ?:
-                entry.value.first().second
-            existingMembers.none { it.overrides(fake) }
-        }
-        */
 
-        println("SYNTH:\n\t${mergedOverrideCandidates.joinToString("\n\t")}}")
+        //println("SYNTH:\n\t${mergedOverrideCandidates.joinToString("\n\t")}}")
 
         val fakeOverrides = mergedOverrideCandidates
             .map { singleFakeOverride ->
@@ -210,7 +194,7 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                 singleFakeOverride
             }
 
-        println("SYNTH:\n\t${fakeOverrides.map {ir2string(it)}.joinToString("\n\t")}}")
+        //println("SYNTH:\n\t${fakeOverrides.map {ir2string(it)}.joinToString("\n\t")}}")
 
         fun redelegateFunction(fake: IrSimpleFunction) {
             val properSignature = signaturer.composePublicIdSignature(fake)
@@ -241,12 +225,12 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                 symbolTable.referencePropertyFromLinker(WrappedPropertyDescriptor(), properSignature)
 
             (fake.symbol as? IrDelegatingPropertySymbolImpl)?.let {
-                println("Redelegating ${fake.nameForIrSerialization} to $deserializedSymbol")
+                //println("Redelegating ${fake.nameForIrSerialization} to $deserializedSymbol")
                 it.delegate = deserializedSymbol
             } ?: error("Somebody else's fake override: in ${ir2string(clazz)} ${ir2string(fake)} ${fake.symbol}")
 
             if (!deserializedSymbol.isBound) {
-                println("binding $deserializedSymbol to $fake ${ir2string(fake)}")
+                //println("binding $deserializedSymbol to $fake ${ir2string(fake)}")
                 deserializedSymbol.bind(fake)
                 symbolTable.rebindProperty(properSignature, fake)
             } else println("symbol is already bound to ${ir2string(deserializedSymbol.owner)}")
@@ -296,13 +280,15 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         }
     }
 
-    fun provideFakeOverrides(module: IrModuleFragment) {
+    // TODO: turn filter into a method and make fo builder abstract
+    fun provideFakeOverrides(module: IrModuleFragment, filter: (IrClass) -> Boolean) {
         module.acceptVoid(object : IrElementVisitorVoid {
             override fun visitElement(element: IrElement) {
                 element.acceptChildrenVoid(this)
             }
             override fun visitClass(declaration: IrClass) {
-                if (declaration.symbol.isPublicApi) {
+
+                if (filter(declaration) && declaration.symbol.isPublicApi) {
                     buildFakeOverridesForClass(declaration)
                     haveFakeOverrides.add(declaration)
                 }
@@ -314,61 +300,6 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
             }
         })
 
-        //println("digraph XXX {")
-        module.acceptVoid(object : IrElementVisitorVoid {
-            override fun visitElement(element: IrElement) {
-                element.acceptChildrenVoid(this)
-            }
-            override fun visitClass(declaration: IrClass) {
-               // println("\t${declaration.hashCode()} [label = \"class ${declaration.name}\" ];")
-
-              //  print("\t${declaration.hashCode()} -> ")
-              //  println(declaration.declarations.filter{it is IrSimpleFunction || it is IrProperty}.map { it.hashCode().toString() }.joinToString(" -> ") + " [ style=dotted ] ; ")
-
-               // declaration.declarations.forEach {
-               //     println("\t${declaration.hashCode()} -> ${it.hashCode()} ;")
-                //}
-                super.visitClass(declaration)
-            }
-            override fun visitProperty(declaration: IrProperty) {
-                if (declaration.parent is IrFile) return
-                //declaration.getter ?. let { println("\t${declaration.hashCode()} -> ${it.hashCode()} [ style=dotted ] ;  ") }
-                //declaration.setter ?. let { println("\t${declaration.hashCode()} -> ${it.hashCode()} [ style=dotted ] ;  ") }
-                super.visitProperty(declaration)
-            }
-            override fun visitFunction(declaration: IrFunction) {
-                if (declaration !is IrSimpleFunction) return
-                if (declaration.parent is IrFile) return
-                //println("\t${declaration.hashCode()} [label = \"fun ${declaration.name}(${declaration.valueParameters.size}) \" ] ; ")
-                if (declaration.name.toString() in listOf("toString", "hashCode", "equals")) return
-                (declaration as IrSimpleFunction).overriddenSymbols.forEach { overridden ->
-                    // println("\t${overridden.owner.hashCode()} -> ${declaration.hashCode()};")
-
-                    val parent = overridden.owner.parent
-                    when (parent) {
-                        is IrProperty -> if (overridden.owner != parent.getter && overridden.owner != parent.setter) {
-                            println("DETACHED OVERRIDDEN GETTER/SETTER:\n" +
-                                    "\tin parent: ${parent.render()}\n" +
-                                    "\tdeclaration: ${declaration.render()}\n" +
-                                    "\toverridden: ${overridden.owner.render()}")
-                        }
-                        is IrClass -> if (overridden.owner !in parent.declarations) {
-                            if ((overridden.owner as? IrSimpleFunction)?.correspondingPropertySymbol != null) {
-                               // println("ACCESSOR UNDER CLASS\n" +
-                               //         "\tin class: ${parent.render()}\n" +
-                               //         "\tdeclaration: ${declaration.render()}\n" +
-                               //         "\toverridden: ${overridden.owner.render()}")
-                            } else {
-                                println("DETACHED OVERIDDEN DECLARATION:\n\tin class: ${parent.render()}\n\tdeclaration: ${declaration.render()}\n\toverridden: ${overridden.owner.render()}")
-                            }
-                        }
-                    }
-                }
-                // Don't go for local classes
-                return
-            }
-        })
-        //println("}")
     }
 }
 
