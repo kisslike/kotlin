@@ -60,6 +60,12 @@ abstract class IrBindablePublicSymbolBase<out D : DeclarationDescriptor, B : IrS
 class IrClassPublicSymbolImpl(descriptor: ClassDescriptor, sig: IdSignature) :
     IrBindablePublicSymbolBase<ClassDescriptor, IrClass>(descriptor, sig),
     IrClassSymbol {
+    init {
+        if ((descriptor !is WrappedDeclarationDescriptor<*>) && descriptor.name.toString() =="NSObject") {
+            println("NEW")
+            Throwable().printStackTrace()
+        }
+    }
 }
 
 class IrEnumEntryPublicSymbolImpl(descriptor: ClassDescriptor, sig: IdSignature) :
@@ -75,12 +81,6 @@ class IrSimpleFunctionPublicSymbolImpl(descriptor: FunctionDescriptor, sig: IdSi
 class IrConstructorPublicSymbolImpl(descriptor: ClassConstructorDescriptor, sig: IdSignature) :
     IrBindablePublicSymbolBase<ClassConstructorDescriptor, IrConstructor>(descriptor, sig),
     IrConstructorSymbol {
-    init {
-        if ((descriptor !is WrappedDeclarationDescriptor<*>) && descriptor.constructedClass.name.toString() =="CCall") {
-            println("NEW")
-            Throwable().printStackTrace()
-        }
-    }
 }
 
 class IrPropertyPublicSymbolImpl(descriptor: PropertyDescriptor, sig: IdSignature) :

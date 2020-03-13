@@ -7,8 +7,14 @@ package org.jetbrains.kotlin.ir.backend.js
 
 import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.analyzer.AbstractAnalyzerWithCompilerReport
+import org.jetbrains.kotlin.backend.common.ir.ir2stringWhole
 import org.jetbrains.kotlin.backend.common.phaser.PhaseConfig
 import org.jetbrains.kotlin.backend.common.phaser.invokeToplevel
+import org.jetbrains.kotlin.backend.common.serialization.FakeOverrideBuilder
+import org.jetbrains.kotlin.backend.common.serialization.knownBuiltins
+import org.jetbrains.kotlin.backend.common.serialization.mangle.ManglerChecker
+import org.jetbrains.kotlin.backend.common.serialization.mangle.descriptor.Ir2DescriptorManglerAdapter
+import org.jetbrains.kotlin.backend.common.serialization.signature.IdSignatureSerializer
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.ir.backend.js.lower.generateTests
 import org.jetbrains.kotlin.ir.backend.js.lower.moveBodilessDeclarationsToSeparatePlace
@@ -19,6 +25,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.StageController
 import org.jetbrains.kotlin.ir.declarations.stageController
 import org.jetbrains.kotlin.ir.util.ExternalDependenciesGenerator
+import org.jetbrains.kotlin.ir.util.allUnbound
 import org.jetbrains.kotlin.ir.util.generateTypicalIrProviderList
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.library.KotlinLibrary
@@ -78,6 +85,24 @@ fun compile(
     moduleFragment.patchDeclarationParents()
 
     deserializer.finalizeExpectActualLinker()
+
+    val fakeOverrideBuilder = FakeOverrideBuilder(symbolTable, IdSignatureSerializer(JsManglerIr), context.irBuiltIns)
+    dependencyModules.forEach { irModule ->
+        fakeOverrideBuilder.provideFakeOverrides(irModule, {true})
+    }
+    fakeOverrideBuilder.provideFakeOverrides(moduleFragment, {true})
+
+    symbolTable.allUnbound.let { unbound ->
+        //assert(unbound.isEmpty()) {
+        println("Left unbound after fake override construction ")
+        unbound.forEach {
+            println("unbound after fake overrides: $it ${if (it.isPublicApi) it.signature.toString() else "NON-PUBLIC API $it"}")
+        }
+        println("/Left unbound")
+        //}
+    }
+
+    java.io.File("/tmp/withfix.log").writeText(ir2stringWhole(moduleFragment))
 
     moveBodilessDeclarationsToSeparatePlace(context, moduleFragment)
 
