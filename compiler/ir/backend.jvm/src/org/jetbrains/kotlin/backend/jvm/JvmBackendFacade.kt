@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.backend.jvm.lower.MultifileFacadeFileEntry
 import org.jetbrains.kotlin.backend.jvm.serialization.JvmIdSignatureDescriptor
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.idea.MainFunctionDetector
-import org.jetbrains.kotlin.descriptors.konan.KlibModuleOrigin
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.EmptyLoggingContext
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrLinker
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmManglerDesc
@@ -33,6 +32,7 @@ object JvmBackendFacade {
         val signaturer = JvmIdSignatureDescriptor(mangler)
         val psi2ir = Psi2IrTranslator(state.languageVersionSettings, signaturer = signaturer)
         val psi2irContext = psi2ir.createGeneratorContext(state.module, state.bindingContext, extensions = extensions)
+        val psi2irGenerator = psi2ir.createModuleGenerator(psi2irContext)
 
         for (extension in IrGenerationExtension.getInstances(state.project)) {
             psi2ir.addPostprocessingStep { module ->
@@ -53,22 +53,17 @@ object JvmBackendFacade {
         val stubGenerator = DeclarationStubGenerator(
             psi2irContext.moduleDescriptor, psi2irContext.symbolTable, psi2irContext.irBuiltIns.languageVersionSettings, extensions
         )
-        val deserializer = JvmIrLinker(
-            EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable
-        )
-        psi2irContext.moduleDescriptor.allDependencyModules.filter { it.getCapability(KlibModuleOrigin.CAPABILITY) != null }.forEach {
-            deserializer.deserializeIrModuleHeader(it)
-        }
+        val deserializer = JvmIrLinker(EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable, stubGenerator)
+        val dependencies = psi2irContext.moduleDescriptor.allDependencyModules.map { deserializer.deserializeIrModuleHeader(it) }
         val irProviders = listOf(deserializer, stubGenerator)
-        stubGenerator.setIrProviders(irProviders)
 
-        val irModuleFragment = psi2ir.generateModuleFragment(
-            psi2irContext, files,
-            irProviders = irProviders,
-            expectDescriptorToSymbol = null
-        )
+        stubGenerator.setIrProviders(irProviders)
+        deserializer.init(psi2irGenerator.moduleFragment)
+
+        val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, irProviders, expectDescriptorToSymbol = null)
+        deserializer.postProcess()
         // We need to compile all files we reference in Klibs
-        irModuleFragment.files.addAll(deserializer.getAllIrFiles())
+        irModuleFragment.files.addAll(dependencies.flatMap { it.files })
 
         doGenerateFilesInternal(
             state, irModuleFragment, psi2irContext.symbolTable, psi2irContext.sourceManager, phaseConfig, irProviders, extensions

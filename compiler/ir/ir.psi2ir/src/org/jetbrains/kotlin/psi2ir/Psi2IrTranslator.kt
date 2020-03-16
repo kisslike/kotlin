@@ -43,6 +43,7 @@ class Psi2IrTranslator(
         postprocessingSteps.add(step)
     }
 
+    // NOTE: used only for test propose
     fun generateModule(
         moduleDescriptor: ModuleDescriptor,
         ktFiles: Collection<KtFile>,
@@ -50,10 +51,11 @@ class Psi2IrTranslator(
         generatorExtensions: GeneratorExtensions
     ): IrModuleFragment {
         val context = createGeneratorContext(moduleDescriptor, bindingContext, extensions = generatorExtensions)
+        val moduleGenerator = createModuleGenerator(context)
         val irProviders = generateTypicalIrProviderList(
             moduleDescriptor, context.irBuiltIns, context.symbolTable, extensions = generatorExtensions
         )
-        return generateModuleFragment(context, ktFiles, irProviders)
+        return generateModuleFragment(moduleGenerator, ktFiles, irProviders)
     }
 
     fun createGeneratorContext(
@@ -64,13 +66,15 @@ class Psi2IrTranslator(
     ): GeneratorContext =
         createGeneratorContext(configuration, moduleDescriptor, bindingContext, languageVersionSettings, symbolTable, extensions, signaturer)
 
+    fun createModuleGenerator(context: GeneratorContext): ModuleGenerator = ModuleGenerator(context)
+
     fun generateModuleFragment(
-        context: GeneratorContext,
+        moduleGenerator: ModuleGenerator,
         ktFiles: Collection<KtFile>,
         irProviders: List<IrProvider>,
         expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null
     ): IrModuleFragment {
-        val moduleGenerator = ModuleGenerator(context)
+        val context = moduleGenerator.context
         val irModule = moduleGenerator.generateModuleFragmentWithoutDependencies(ktFiles)
 
         irModule.patchDeclarationParents()

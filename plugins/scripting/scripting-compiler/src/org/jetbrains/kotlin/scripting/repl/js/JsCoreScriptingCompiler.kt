@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.generateJsCode
-import org.jetbrains.kotlin.ir.backend.js.generateModuleFragment
 import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.JsManglerDesc
 import org.jetbrains.kotlin.ir.backend.js.utils.NameTables
 import org.jetbrains.kotlin.ir.util.ExternalDependenciesGenerator
@@ -58,14 +57,16 @@ class JsCoreScriptingCompiler(
             if (messageCollector.hasErrors()) return ReplCompileResult.Error("Error while analysis")
         }
 
+        val files = listOf(snippetKtFile)
         val module = analysisResult.moduleDescriptor
         val bindingContext = analysisResult.bindingContext
         val mangler = JsManglerDesc
         val signaturer = IdSignatureDescriptor(mangler)
         val psi2ir = Psi2IrTranslator(environment.configuration.languageVersionSettings, signaturer = signaturer)
         val psi2irContext = psi2ir.createGeneratorContext(module, bindingContext, symbolTable)
-
-        val irModuleFragment = psi2irContext.generateModuleFragment(listOf(snippetKtFile))
+        val psi2irGenerator = psi2ir.createModuleGenerator(psi2irContext)
+        val providers = generateTypicalIrProviderList(module, psi2irContext.irBuiltIns, psi2irContext.symbolTable)
+        val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, providers, null) // TODO: deserializer
 
         val context = JsIrBackendContext(
             irModuleFragment.descriptor,

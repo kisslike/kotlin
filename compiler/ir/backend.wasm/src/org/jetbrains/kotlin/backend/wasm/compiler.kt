@@ -54,7 +54,7 @@ fun compileWasm(
     val irProviders = generateTypicalIrProviderList(moduleDescriptor, irBuiltIns, symbolTable, deserializer)
     ExternalDependenciesGenerator(symbolTable, irProviders).generateUnboundSymbolsAsDependencies()
     moduleFragment.patchDeclarationParents()
-    deserializer.finalizeExpectActualLinker()
+    deserializer.postProcess()
 
     wasmPhases.invokeToplevel(phaseConfig, context, moduleFragment)
 
