@@ -21,6 +21,8 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.types.AbstractTypeChecker
+import org.jetbrains.kotlin.types.AbstractTypeCheckerContext
 
 class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignatureSerializer, val irBuiltIns: IrBuiltIns) {
     //private val needFakeOverrides = mutableListOf<IrClass>()
@@ -253,17 +255,20 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
     }
 
     fun IrDeclaration.overrides(other: IrDeclaration, considerModality: Boolean = false): Boolean {
+
         when (this) {
             is IrSimpleFunction -> {
                 if (other !is IrSimpleFunction) return false
                 if (this.name != other.name) return false
-                if (this.valueParameters.size != other.valueParameters.size) return false
-                this.valueParameters.forEachIndexed { index, parameter ->
-                    if (!other.valueParameters[index].type.equals(parameter.type)) return false
-                }
                 // TODO: do we need to match type parameter bounds?
                 if (this.typeParameters.size != other.typeParameters.size) return false
-                if (!this.returnType.isSubtypeOf(other.returnType, irBuiltIns)) return false
+
+                val typeCheckerContext = IrTypeCheckerContextWithAdditionalAxioms(irBuiltIns, this.typeParameters, other.typeParameters)
+                if (this.valueParameters.size != other.valueParameters.size) return false
+                this.valueParameters.forEachIndexed { index, parameter ->
+                    if (!AbstractTypeChecker.equalTypes(typeCheckerContext as AbstractTypeCheckerContext, other.valueParameters[index].type, parameter.type)) return false
+                }
+                if (!AbstractTypeChecker.isSubtypeOf(typeCheckerContext as AbstractTypeCheckerContext, this.returnType, other.returnType)) return false
                 if (considerModality && this.modality == Modality.ABSTRACT && other.modality != Modality.ABSTRACT) return false
 
                 return true
