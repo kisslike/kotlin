@@ -162,7 +162,8 @@ data class KotlinTargetImpl(
     override val disambiguationClassifier: String?,
     override val platform: KotlinPlatform,
     override val compilations: Collection<KotlinCompilation>,
-    override val testTasks: Collection<KotlinTestTask>,
+    override val nativeRunTasks: Collection<KotlinNativeRunTask>,
+    override val testTasks: Collection<KotlinRunTask>,
     override val jar: KotlinTargetJar?,
     override val konanArtifacts: List<KonanArtifactModel>
 ) : KotlinTarget {
@@ -178,9 +179,23 @@ data class KotlinTargetImpl(
                 cloningCache[initialCompilation] = it
             }
         }.toList(),
+        target.nativeRunTasks.map { initialTask ->
+            (cloningCache[initialTask] as? KotlinNativeRunTask)
+                ?: KotlinNativeRunTaskImpl(
+                    initialTask.taskName,
+                    initialTask.compilationName,
+                    initialTask.entryPoint,
+                    initialTask.debuggable
+                ).also {
+                    cloningCache[initialTask] = it
+                }
+        },
         target.testTasks.map { initialTestTask ->
-            (cloningCache[initialTestTask] as? KotlinTestTask)
-                ?: KotlinTestTaskImpl(initialTestTask.taskName, initialTestTask.compilationName).also {
+            (cloningCache[initialTestTask] as? KotlinRunTask)
+                ?: KotlinTestTaskImpl(
+                    initialTestTask.taskName,
+                    initialTestTask.compilationName
+                ).also {
                     cloningCache[initialTestTask] = it
                 }
         },
@@ -189,10 +204,17 @@ data class KotlinTargetImpl(
     )
 }
 
+data class KotlinNativeRunTaskImpl(
+    override val taskName: String,
+    override val compilationName: String,
+    override val entryPoint: String,
+    override val debuggable: Boolean
+) : KotlinNativeRunTask
+
 data class KotlinTestTaskImpl(
     override val taskName: String,
     override val compilationName: String
-) : KotlinTestTask
+) : KotlinRunTask
 
 data class ExtraFeaturesImpl(
     override val coroutinesState: String?,

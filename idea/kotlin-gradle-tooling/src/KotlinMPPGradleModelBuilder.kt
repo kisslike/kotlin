@@ -82,7 +82,9 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
                 null
             }?.toString()?.toBoolean() ?: DEFAULT_IMPORT_ORPHAN_SOURCE_SETS
         ) return sourceSets
-        val compiledSourceSets: Collection<String> = targets.flatMap { it.compilations }.flatMap { it.sourceSets }.flatMap { it.dependsOnSourceSets.union(listOf(it.name)) }.distinct()
+        val compiledSourceSets: Collection<String> =
+            targets.flatMap { it.compilations }.flatMap { it.sourceSets }.flatMap { it.dependsOnSourceSets.union(listOf(it.name)) }
+                .distinct()
         sourceSets.filter { !compiledSourceSets.contains(it.key) }.forEach {
             logger.warn("[sync warning] Source set \"${it.key}\" is not compiled with any compilation. This source set is not imported in the IDE.")
         }
@@ -211,7 +213,8 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         val dependsOnSourceSets = (getDependsOn(gradleSourceSet) as? Set<Named>)?.mapTo(LinkedHashSet()) { it.name } ?: emptySet<String>()
 
         val sourceSetDependenciesBuilder: () -> Array<KotlinDependencyId> = {
-            buildSourceSetDependencies(gradleSourceSet, dependencyResolver, project, androidDeps).map { dependencyMapper.getId(it) }.distinct()
+            buildSourceSetDependencies(gradleSourceSet, dependencyResolver, project, androidDeps).map { dependencyMapper.getId(it) }
+                .distinct()
                 .toTypedArray()
         }
         return KotlinSourceSetProto(
@@ -375,6 +378,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
             }
         }
         val jar = buildTargetJar(gradleTarget, project)
+        val nativeRunTasks = getNativeRunTasks(project)
         val testTasks = buildTestTasks(project, gradleTarget)
         val artifacts = konanArtifacts(gradleTarget)
         val target = KotlinTargetImpl(
@@ -383,6 +387,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
             disambiguationClassifier,
             platform,
             compilations,
+            nativeRunTasks,
             testTasks,
             jar,
             artifacts
@@ -419,7 +424,28 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         )
     }
 
-    private fun buildTestTasks(project: Project, gradleTarget: Named): Collection<KotlinTestTask> {
+    private fun getNativeRunTasks(project: Project): Collection<KotlinNativeRunTask> {
+        val kotlinExtension = project.extensions.findByName("kotlin") ?: return emptyList()
+        val targets =
+            kotlinExtension::class.java.getMethodOrNull("getTargets")?.invoke(kotlinExtension) as? Collection<Any> ?: return emptyList()
+        val executableBinaries =
+            targets.filter { it.javaClass.name.contains("KotlinNativeTarget") }
+                .flatMap { it::class.java.getMethodOrNull("getBinaries")?.invoke(it) as? Collection<Any> ?: emptyList() }
+                .filter { it.javaClass.name == "org.jetbrains.kotlin.gradle.plugin.mpp.Executable" }
+        return executableBinaries.map { binary ->
+            val compilation = binary.javaClass.getMethodOrNull("getCompilation")?.invoke(binary)
+            val compilationName = compilation?.javaClass?.getMethodOrNull("getCompilationName")?.invoke(compilation)?.toString()
+                ?: KotlinCompilation.MAIN_COMPILATION_NAME
+            KotlinNativeRunTaskImpl(
+                binary::class.java.getMethod("getRunTaskName").invoke(binary) as String,
+                compilationName,
+                binary::class.java.getMethod("getEntryPoint").invoke(binary) as String,
+                binary::class.java.getMethod("getDebuggable").invoke(binary) as Boolean
+            )
+        }
+    }
+
+    private fun buildTestTasks(project: Project, gradleTarget: Named): Collection<KotlinRunTask> {
         val getTestRunsMethod = gradleTarget.javaClass.getMethodOrNull("getTestRuns")
         if (getTestRunsMethod != null) {
             val testRuns = getTestRunsMethod?.invoke(gradleTarget) as? Iterable<Any>
