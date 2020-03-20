@@ -152,6 +152,23 @@ data class ExternalSystemTestTask(val testName: String, val externalSystemProjec
     override fun toString() = "$testName@$externalSystemProjectId [$targetName]"
 }
 
+data class ExternalSystemKotlinNativeRunTask(
+    val taskName: String,
+    val entryPoint: String,
+    val debuggable: Boolean
+) {
+
+    fun toStringRepresentation() = "$taskName|$entryPoint|$debuggable"
+
+    companion object {
+        fun fromStringRepresentation(line: String) =
+            line.split("|").let {
+                if (it.size == 3) ExternalSystemKotlinNativeRunTask(it[0], it[1], it[2].toBoolean())
+                else null
+            }
+    }
+}
+
 class KotlinFacetSettings {
     companion object {
         // Increment this when making serialization-incompatible changes to configuration data
@@ -232,6 +249,7 @@ class KotlinFacetSettings {
         }
 
     var externalSystemTestTasks: List<ExternalSystemTestTask> = emptyList()
+    var externalSystemNativeRunTasks: List<ExternalSystemKotlinNativeRunTask> = emptyList()
 
     @Suppress("DEPRECATION_ERROR")
     @Deprecated(

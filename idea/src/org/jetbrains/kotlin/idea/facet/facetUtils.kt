@@ -157,7 +157,7 @@ fun KotlinFacet.configureFacet(
     platform: TargetPlatform?,
     modelsProvider: IdeModifiableModelsProvider
 ) {
-    configureFacet(compilerVersion, coroutineSupport, platform, modelsProvider, false, emptyList(), emptyList())
+    configureFacet(compilerVersion, coroutineSupport, platform, modelsProvider, false, emptyList(), emptyList(), emptyList())
 }
 
 fun KotlinFacet.configureFacet(
@@ -167,7 +167,8 @@ fun KotlinFacet.configureFacet(
     modelsProvider: IdeModifiableModelsProvider,
     hmppEnabled: Boolean,
     pureKotlinSourceFolders: List<String>,
-    dependsOnList: List<String>
+    dependsOnList: List<String>,
+    nativeRunTask: List<ExternalSystemKotlinNativeRunTask>
 ) {
     val module = module
     with(configuration.settings) {
@@ -176,6 +177,7 @@ fun KotlinFacet.configureFacet(
         compilerSettings = null
         isHmppEnabled = hmppEnabled
         dependsOnModuleNames = dependsOnList
+        externalSystemNativeRunTasks = nativeRunTask
         initializeIfNeeded(
             module,
             modelsProvider.getModifiableRootModel(module),

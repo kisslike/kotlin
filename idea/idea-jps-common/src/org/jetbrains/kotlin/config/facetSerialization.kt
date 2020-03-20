@@ -129,6 +129,9 @@ private fun readV2AndLaterConfig(element: Element): KotlinFacetSettings {
         readElementsList(element, "externalSystemTestTasks", "externalSystemTestTask")?.let {
             externalSystemTestTasks = it.mapNotNull { ExternalSystemTestTask.fromStringRepresentation(it) }
         }
+        readElementsList(element, "externalSystemNativeRunTasks", "externalSystemNativeRunTask")?.let {
+            externalSystemNativeRunTasks = it.mapNotNull { ExternalSystemKotlinNativeRunTask.fromStringRepresentation(it) }
+        }
 
         element.getChild("sourceSets")?.let {
             val items = it.getChildren("sourceSet")
@@ -324,6 +327,14 @@ private fun KotlinFacetSettings.writeLatestConfig(element: Element) {
             externalSystemTestTasks.map { it.toStringRepresentation() },
             "externalSystemTestTasks",
             "externalSystemTestTask"
+        )
+    }
+    if (externalSystemNativeRunTasks.isNotEmpty()) {
+        saveElementsList(
+            element,
+            externalSystemNativeRunTasks.map { it.toStringRepresentation() },
+            "externalSystemNativeRunTasks",
+            "externalSystemNativeRunTask"
         )
     }
     if (pureKotlinSourceFolders.isNotEmpty()) {
