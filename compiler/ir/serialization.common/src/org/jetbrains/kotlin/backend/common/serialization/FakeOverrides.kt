@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.ir.symbols.impl.IrClassPublicSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.buildSimpleType
@@ -68,6 +69,7 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
     // TODO: make me non-recursive.
     fun buildFakeOverridesForClass(clazz: IrClass) {
         if (haveFakeOverrides.contains(clazz)) return
+        if ((clazz.symbol as? IrClassPublicSymbolImpl)?.isPublicApi != true) return
 
         val superTypes = clazz.superTypes
 
@@ -172,7 +174,7 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
         //    println(it.render())
         //}
 
-        //println("\nDESER:\n\t${existingMembers.map {ir2string(it)}.joinToString("\n\t")}")
+        println("\nDESER:\n\t${existingMembers.map {ir2string(it)}.joinToString("\n\t")}")
         //println("DESER:\n\t${existingIdSignatures.joinToString("\n\t")}}")
 
 
@@ -196,7 +198,7 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
                 singleFakeOverride
             }
 
-        //println("SYNTH:\n\t${fakeOverrides.map {ir2string(it)}.joinToString("\n\t")}}")
+        println("SYNTH:\n\t${fakeOverrides.map {ir2string(it)}.joinToString("\n\t")}}")
 
         fun redelegateFunction(fake: IrSimpleFunction) {
             val properSignature = signaturer.composePublicIdSignature(fake)
@@ -255,6 +257,12 @@ class FakeOverrideBuilder(val symbolTable: SymbolTable, val signaturer: IdSignat
     }
 
     fun IrDeclaration.overrides(other: IrDeclaration, considerModality: Boolean = false): Boolean {
+
+        // fun dbg(any: Any?) {
+        //    if (this.nameForIrSerialization.toString() != "interceptContinuation") return
+        //    if (other.nameForIrSerialization.toString() != "interceptContinuation") return
+        //    println(any)
+        //}
 
         when (this) {
             is IrSimpleFunction -> {
@@ -425,7 +433,6 @@ class DeepCopyIrTreeForFakeOverrides(
                     superDispatchReceiver.isCrossinline,
                     superDispatchReceiver.isNoinline
                 )
-
 
                 // Should fake override's receiver be the current class is an open question.
                 //dispatchReceiverParameter = declaration.dispatchReceiverParameter?.transform()

@@ -28,4 +28,10 @@ open class IrTypeCheckerContextWithAdditionalAxioms(
         if (matchingTypeConstructors[a] == b || matchingTypeConstructors[b] == a) return true
         return false
     }
+
+    override fun isEqualTypeConstructors(c1: TypeConstructorMarker, c2: TypeConstructorMarker): Boolean {
+        if (super.isEqualTypeConstructors(c1, c2)) return true
+        if (matchingTypeConstructors[c1] == c2 || matchingTypeConstructors[c2] == c1) return true
+        return false
+    }
 }
