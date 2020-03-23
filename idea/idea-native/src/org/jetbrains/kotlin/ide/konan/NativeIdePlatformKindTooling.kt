@@ -14,9 +14,12 @@ import com.intellij.openapi.roots.ui.configuration.libraries.CustomLibraryDescri
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.gradle.KotlinPlatform
+import org.jetbrains.kotlin.idea.caches.project.isTestModule
 import org.jetbrains.kotlin.idea.framework.KotlinLibraryKind
+import org.jetbrains.kotlin.idea.isMainFunction
 import org.jetbrains.kotlin.idea.platform.IdePlatformKindTooling
 import org.jetbrains.kotlin.idea.platform.getGenericTestIcon
+import org.jetbrains.kotlin.idea.util.module
 import org.jetbrains.kotlin.platform.impl.NativeIdePlatformKind
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
@@ -54,7 +57,19 @@ class NativeIdePlatformKindTooling : IdePlatformKindTooling() {
         }
     }
 
-    override fun acceptsAsEntryPoint(function: KtFunction) = false
+    override fun acceptsAsEntryPoint(function: KtFunction): Boolean {
+        val hasRunConfigurations = RunConfigurationProducer
+            .getProducers(function.project)
+            .asSequence()
+            .filterIsInstance<KotlinNativeRunConfigurationProvider>()
+            .any { !it.isForTests }
+
+        if (!hasRunConfigurations) return false
+        if (!function.isMainFunction()) return false
+        if (function.module?.isTestModule == true) return false
+
+        return true
+    }
 }
 
 object NativeLibraryKind : PersistentLibraryKind<DummyLibraryProperties>("kotlin.native"), KotlinLibraryKind {
