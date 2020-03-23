@@ -19,7 +19,6 @@ import com.intellij.openapi.roots.ExportableOrderEntry
 import com.intellij.openapi.roots.ModifiableRootModel
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.config.CoroutineSupport
-import org.jetbrains.kotlin.config.ExternalSystemKotlinNativeRunTask
 import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.KotlinModuleKind
 import org.jetbrains.kotlin.gradle.KotlinCompilation
@@ -130,7 +129,7 @@ class KotlinSourceSetDataService : AbstractProjectDataService<GradleSourceSetDat
                 mainModuleNode.isHmpp,
                 mainModuleNode.pureKotlinSourceFolders,
                 kotlinSourceSet.dependsOn,
-                kotlinSourceSet.nativeRunTasks?.toList() ?: emptyList()
+                kotlinSourceSet.nativeRunTasks.toList()
             )
 
             val compilerArguments = kotlinSourceSet.compilerArguments

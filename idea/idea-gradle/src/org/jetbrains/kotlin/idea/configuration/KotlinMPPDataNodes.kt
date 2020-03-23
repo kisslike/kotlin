@@ -16,8 +16,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.serialization.PropertyMapping
 import com.intellij.util.containers.MultiMap
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
-import org.jetbrains.kotlin.config.ExternalSystemKotlinNativeRunTask
-import org.jetbrains.kotlin.config.ExternalSystemTestTask
+import org.jetbrains.kotlin.config.ExternalSystemRunTask
 import org.jetbrains.kotlin.gradle.*
 import org.jetbrains.kotlin.idea.util.CopyableDataNodeUserDataProperty
 import org.jetbrains.plugins.gradle.util.GradleConstants
@@ -50,8 +49,8 @@ class KotlinSourceSetInfo @PropertyMapping("kotlinModule") constructor(val kotli
     var isTestModule: Boolean = false
     var sourceSetIdsByName: MutableMap<String, String> = LinkedHashMap()
     var dependsOn: List<String> = emptyList()
-    var externalSystemTestTasks: Collection<ExternalSystemTestTask> = emptyList()
-    var nativeRunTasks: Collection<ExternalSystemKotlinNativeRunTask> = emptyList()
+    var externalSystemTestTasks: Collection<ExternalSystemRunTask> = emptyList()
+    var nativeRunTasks: Collection<ExternalSystemRunTask> = emptyList()
 }
 
 class KotlinAndroidSourceSetData @PropertyMapping("sourceSetInfos") constructor(val sourceSetInfos: List<KotlinSourceSetInfo>

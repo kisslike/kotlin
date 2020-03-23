@@ -162,7 +162,7 @@ data class KotlinTargetImpl(
     override val disambiguationClassifier: String?,
     override val platform: KotlinPlatform,
     override val compilations: Collection<KotlinCompilation>,
-    override val nativeRunTasks: Collection<KotlinNativeRunTask>,
+    override val nativeRunTasks: Collection<KotlinRunTask>,
     override val testTasks: Collection<KotlinRunTask>,
     override val jar: KotlinTargetJar?,
     override val konanArtifacts: List<KonanArtifactModel>
@@ -180,19 +180,17 @@ data class KotlinTargetImpl(
             }
         }.toList(),
         target.nativeRunTasks.map { initialTask ->
-            (cloningCache[initialTask] as? KotlinNativeRunTask)
-                ?: KotlinNativeRunTaskImpl(
+            (cloningCache[initialTask] as? KotlinRunTask)
+                ?: KotlinRunTaskImpl(
                     initialTask.taskName,
-                    initialTask.compilationName,
-                    initialTask.entryPoint,
-                    initialTask.debuggable
+                    initialTask.compilationName
                 ).also {
                     cloningCache[initialTask] = it
                 }
         },
         target.testTasks.map { initialTestTask ->
             (cloningCache[initialTestTask] as? KotlinRunTask)
-                ?: KotlinTestTaskImpl(
+                ?: KotlinRunTaskImpl(
                     initialTestTask.taskName,
                     initialTestTask.compilationName
                 ).also {
@@ -204,14 +202,7 @@ data class KotlinTargetImpl(
     )
 }
 
-data class KotlinNativeRunTaskImpl(
-    override val taskName: String,
-    override val compilationName: String,
-    override val entryPoint: String,
-    override val debuggable: Boolean
-) : KotlinNativeRunTask
-
-data class KotlinTestTaskImpl(
+data class KotlinRunTaskImpl(
     override val taskName: String,
     override val compilationName: String
 ) : KotlinRunTask

@@ -168,7 +168,7 @@ fun KotlinFacet.configureFacet(
     hmppEnabled: Boolean,
     pureKotlinSourceFolders: List<String>,
     dependsOnList: List<String>,
-    nativeRunTask: List<ExternalSystemKotlinNativeRunTask>
+    nativeRunTask: List<ExternalSystemRunTask>
 ) {
     val module = module
     with(configuration.settings) {
@@ -196,7 +196,7 @@ fun KotlinFacet.configureFacet(
     module.externalCompilerVersion = compilerVersion
 }
 
-fun Module.externalSystemTestTasks(): List<ExternalSystemTestTask> {
+fun Module.externalSystemTestTasks(): List<ExternalSystemRunTask> {
     val settingsProvider = KotlinFacetSettingsProvider.getInstance(project) ?: return emptyList()
     return settingsProvider.getInitializedSettings(this).externalSystemTestTasks
 }

@@ -140,33 +140,16 @@ val KotlinMultiplatformVersion?.isNewMPP: Boolean
 val KotlinMultiplatformVersion?.isHmpp: Boolean
     get() = this == KotlinMultiplatformVersion.M3
 
-data class ExternalSystemTestTask(val testName: String, val externalSystemProjectId: String, val targetName: String?) {
+data class ExternalSystemRunTask(val taskName: String, val externalSystemProjectId: String, val targetName: String?) {
 
-    fun toStringRepresentation() = "$testName|$externalSystemProjectId|$targetName"
-
-    companion object {
-        fun fromStringRepresentation(line: String) =
-            line.split("|").let { if (it.size == 3) ExternalSystemTestTask(it[0], it[1], it[2]) else null }
-    }
-
-    override fun toString() = "$testName@$externalSystemProjectId [$targetName]"
-}
-
-data class ExternalSystemKotlinNativeRunTask(
-    val taskName: String,
-    val entryPoint: String,
-    val debuggable: Boolean
-) {
-
-    fun toStringRepresentation() = "$taskName|$entryPoint|$debuggable"
+    fun toStringRepresentation() = "$taskName|$externalSystemProjectId|$targetName"
 
     companion object {
         fun fromStringRepresentation(line: String) =
-            line.split("|").let {
-                if (it.size == 3) ExternalSystemKotlinNativeRunTask(it[0], it[1], it[2].toBoolean())
-                else null
-            }
+            line.split("|").let { if (it.size == 3) ExternalSystemRunTask(it[0], it[1], it[2]) else null }
     }
+
+    override fun toString() = "$taskName@$externalSystemProjectId [$targetName]"
 }
 
 class KotlinFacetSettings {
@@ -248,8 +231,8 @@ class KotlinFacetSettings {
             return field
         }
 
-    var externalSystemTestTasks: List<ExternalSystemTestTask> = emptyList()
-    var externalSystemNativeRunTasks: List<ExternalSystemKotlinNativeRunTask> = emptyList()
+    var externalSystemTestTasks: List<ExternalSystemRunTask> = emptyList()
+    var externalSystemNativeRunTasks: List<ExternalSystemRunTask> = emptyList()
 
     @Suppress("DEPRECATION_ERROR")
     @Deprecated(

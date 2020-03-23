@@ -14,7 +14,7 @@ import com.intellij.openapi.roots.impl.ModuleOrderEntryImpl
 import com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.jps.model.module.JpsModuleSourceRootType
 import org.jetbrains.jps.util.JpsPathUtil
-import org.jetbrains.kotlin.config.ExternalSystemTestTask
+import org.jetbrains.kotlin.config.ExternalSystemRunTask
 import org.jetbrains.kotlin.idea.facet.KotlinFacet
 import org.jetbrains.kotlin.idea.facet.externalSystemTestTasks
 import org.jetbrains.kotlin.idea.project.isHMPPEnabled
@@ -90,7 +90,7 @@ class ModuleInfo(
     private val rootModel = module.rootManager
     private val expectedDependencyNames = HashSet<String>()
     private val expectedSourceRoots = HashSet<String>()
-    private val expectedExternalSystemTestTasks = ArrayList<ExternalSystemTestTask>()
+    private val expectedExternalSystemTestTasks = ArrayList<ExternalSystemRunTask>()
 
     private val sourceFolderByPath by lazy {
         rootModel.contentEntries.asSequence()
@@ -161,7 +161,7 @@ class ModuleInfo(
     }
 
     fun externalSystemTestTask(taskName: String, projectId: String, targetName: String) {
-        expectedExternalSystemTestTasks.add(ExternalSystemTestTask(taskName, projectId, targetName))
+        expectedExternalSystemTestTasks.add(ExternalSystemRunTask(taskName, projectId, targetName))
     }
 
     fun libraryDependency(libraryName: String, scope: DependencyScope) {

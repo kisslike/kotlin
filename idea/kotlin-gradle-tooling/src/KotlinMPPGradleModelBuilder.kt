@@ -424,7 +424,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         )
     }
 
-    private fun getNativeRunTasks(project: Project): Collection<KotlinNativeRunTask> {
+    private fun getNativeRunTasks(project: Project): Collection<KotlinRunTask> {
         val kotlinExtension = project.extensions.findByName("kotlin") ?: return emptyList()
         val targets =
             kotlinExtension::class.java.getMethodOrNull("getTargets")?.invoke(kotlinExtension) as? Collection<Any> ?: return emptyList()
@@ -436,11 +436,9 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
             val compilation = binary.javaClass.getMethodOrNull("getCompilation")?.invoke(binary)
             val compilationName = compilation?.javaClass?.getMethodOrNull("getCompilationName")?.invoke(compilation)?.toString()
                 ?: KotlinCompilation.MAIN_COMPILATION_NAME
-            KotlinNativeRunTaskImpl(
+            KotlinRunTaskImpl(
                 binary::class.java.getMethod("getRunTaskName").invoke(binary) as String,
-                compilationName,
-                binary::class.java.getMethod("getEntryPoint").invoke(binary) as String,
-                binary::class.java.getMethod("getDebuggable").invoke(binary) as Boolean
+                compilationName
             )
         }
     }
@@ -467,7 +465,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
                     val compilation = it.javaClass.getMethodOrNull("getCompilation")?.invoke(it)
                     val compilationName = compilation?.javaClass?.getMethodOrNull("getCompilationName")?.invoke(compilation)?.toString()
                         ?: KotlinCompilation.TEST_COMPILATION_NAME
-                    KotlinTestTaskImpl(name, compilationName)
+                    KotlinRunTaskImpl(name, compilationName)
                 }.toList()
             }
             return emptyList()
@@ -508,7 +506,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
                         testTaskDisambiguationClassifier != null &&
                         testTaskDisambiguationClassifier.startsWith(targetDisambiguationClassifier.orEmpty())
             }
-        }.map { KotlinTestTaskImpl(it, KotlinCompilation.TEST_COMPILATION_NAME) }
+        }.map { KotlinRunTaskImpl(it, KotlinCompilation.TEST_COMPILATION_NAME) }
     }
 
     private fun buildTargetJar(gradleTarget: Named, project: Project): KotlinTargetJar? {

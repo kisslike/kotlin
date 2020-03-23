@@ -33,8 +33,7 @@ import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.ManualLanguageFeatureSetting
 import org.jetbrains.kotlin.cli.common.arguments.parseCommandLineArguments
-import org.jetbrains.kotlin.config.ExternalSystemKotlinNativeRunTask
-import org.jetbrains.kotlin.config.ExternalSystemTestTask
+import org.jetbrains.kotlin.config.ExternalSystemRunTask
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.gradle.*
 import org.jetbrains.kotlin.idea.configuration.GradlePropertiesFileFacade.Companion.KOTLIN_NOT_IMPORTED_COMMON_SOURCE_SETS_SETTING
@@ -284,8 +283,9 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtensionComp
 
             val sourceSetMap = projectDataNode.getUserData(GradleProjectResolver.RESOLVED_SOURCE_SETS)!!
 
-            val sourceSetToTestTasks = calculateTestTasks(mppModel, gradleModule, resolverCtx)
-            val sourceSetToNativeRunTasks = calculateNativeRunTasks(mppModel)
+            val sourceSetToTestTasks: MutableMap<KotlinSourceSet, MutableCollection<ExternalSystemRunTask>> = HashMap()
+            val sourceSetToNativeRunTasks: MutableMap<KotlinSourceSet, MutableCollection<ExternalSystemRunTask>> = HashMap()
+            calculateRunTasks(mppModel, gradleModule, resolverCtx, sourceSetToTestTasks, sourceSetToNativeRunTasks)
 
             val sourceSetToCompilationData = LinkedHashMap<KotlinSourceSet, MutableSet<GradleSourceSetData>>()
             for (target in mppModel.targets) {
@@ -424,21 +424,41 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtensionComp
             //TODO improve passing version of used multiplatform
         }
 
-        private fun calculateTestTasks(
+        private fun calculateRunTasks(
             mppModel: KotlinMPPGradleModel,
             gradleModule: IdeaModule,
-            resolverCtx: ProjectResolverContext
-        ): Map<KotlinSourceSet, Collection<ExternalSystemTestTask>> {
-            val sourceSetToTestTasks: MutableMap<KotlinSourceSet, MutableCollection<ExternalSystemTestTask>> = HashMap()
+            resolverCtx: ProjectResolverContext,
+            sourceSetToTestTasks: MutableMap<KotlinSourceSet, MutableCollection<ExternalSystemRunTask>>,
+            sourceSetToNativeRunTasks: MutableMap<KotlinSourceSet, MutableCollection<ExternalSystemRunTask>>
+        ) {
             val dependsOnReverseGraph: MutableMap<String, MutableSet<KotlinSourceSet>> = HashMap()
             mppModel.targets.forEach { target ->
-                target.compilations.forEach { compilation ->
-                    val testTasks = target.testTasks.filter { testTask -> testTask.compilationName == compilation.name }
-                        .map { ExternalSystemTestTask(it.taskName, getKotlinModuleId(gradleModule, compilation, resolverCtx), target.name) }
-                    compilation.sourceSets.forEach { sourceSet ->
-                        sourceSetToTestTasks.getOrPut(sourceSet) { LinkedHashSet() } += testTasks
-                        sourceSet.dependsOnSourceSets.forEach { dependentModule ->
-                            dependsOnReverseGraph.getOrPut(dependentModule) { LinkedHashSet() } += sourceSet
+                if (target.name != KotlinTarget.METADATA_TARGET_NAME) {
+                    target.compilations.forEach { compilation ->
+                        val testTasks = target.testTasks
+                            .filter { testTask -> testTask.compilationName == compilation.name }
+                            .map {
+                                ExternalSystemRunTask(
+                                    it.taskName,
+                                    getKotlinModuleId(gradleModule, compilation, resolverCtx),
+                                    target.name
+                                )
+                            }
+                        val nativeRunTasks = target.nativeRunTasks
+                            .filter { testTask -> testTask.compilationName == compilation.name }
+                            .map {
+                                ExternalSystemRunTask(
+                                    it.taskName,
+                                    getKotlinModuleId(gradleModule, compilation, resolverCtx),
+                                    target.name
+                                )
+                            }
+                        compilation.sourceSets.forEach { sourceSet ->
+                            sourceSetToTestTasks.getOrPut(sourceSet) { LinkedHashSet() } += testTasks
+                            sourceSetToNativeRunTasks.getOrPut(sourceSet) { LinkedHashSet() } += nativeRunTasks
+                            sourceSet.dependsOnSourceSets.forEach { dependentModule ->
+                                dependsOnReverseGraph.getOrPut(dependentModule) { LinkedHashSet() } += sourceSet
+                            }
                         }
                     }
                 }
@@ -446,38 +466,9 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtensionComp
             mppModel.sourceSets.forEach { (sourceSetName, sourceSet) ->
                 dependsOnReverseGraph[sourceSetName]?.forEach { dependingSourceSet ->
                     sourceSetToTestTasks.getOrPut(sourceSet) { LinkedHashSet() } += sourceSetToTestTasks[dependingSourceSet] ?: emptyList()
+                    sourceSetToNativeRunTasks.getOrPut(sourceSet) { LinkedHashSet() } += sourceSetToNativeRunTasks[dependingSourceSet] ?: emptyList()
                 }
             }
-            return sourceSetToTestTasks
-        }
-
-        private fun calculateNativeRunTasks(
-            mppModel: KotlinMPPGradleModel
-        ): Map<KotlinSourceSet, Collection<ExternalSystemKotlinNativeRunTask>> {
-            val sourceSetToRunTasks: MutableMap<KotlinSourceSet, MutableCollection<ExternalSystemKotlinNativeRunTask>> = HashMap()
-            val dependsOnReverseGraph: MutableMap<String, MutableSet<KotlinSourceSet>> = HashMap()
-            mppModel.targets.forEach { target ->
-                target.compilations.forEach { compilation ->
-                    val runTasks = target.nativeRunTasks
-                        .filter { testTask -> testTask.compilationName == compilation.name }
-                        .map {
-                            ExternalSystemKotlinNativeRunTask(it.taskName, it.entryPoint, it.debuggable)
-                        }
-
-                    compilation.sourceSets.forEach { sourceSet ->
-                        sourceSetToRunTasks.getOrPut(sourceSet) { LinkedHashSet() } += runTasks
-                        sourceSet.dependsOnSourceSets.forEach { dependentModule ->
-                            dependsOnReverseGraph.getOrPut(dependentModule) { LinkedHashSet() } += sourceSet
-                        }
-                    }
-                }
-            }
-            mppModel.sourceSets.forEach { (sourceSetName, sourceSet) ->
-                dependsOnReverseGraph[sourceSetName]?.forEach { dependingSourceSet ->
-                    sourceSetToRunTasks.getOrPut(sourceSet) { LinkedHashSet() } += sourceSetToRunTasks[dependingSourceSet] ?: emptyList()
-                }
-            }
-            return sourceSetToRunTasks
         }
 
         fun populateContentRoots(
