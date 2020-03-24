@@ -168,7 +168,7 @@ fun KotlinFacet.configureFacet(
     hmppEnabled: Boolean,
     pureKotlinSourceFolders: List<String>,
     dependsOnList: List<String>,
-    nativeRunTask: List<ExternalSystemRunTask>
+    nativeRunTask: List<ExternalSystemNativeRunTask>
 ) {
     val module = module
     with(configuration.settings) {

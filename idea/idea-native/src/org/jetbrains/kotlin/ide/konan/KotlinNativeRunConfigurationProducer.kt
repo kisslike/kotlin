@@ -12,6 +12,7 @@ import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.parentOfType
 import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.idea.isMainFunction
 import org.jetbrains.kotlin.idea.project.platform
@@ -34,7 +35,15 @@ class KotlinNativeRunConfigurationProducer :
         GradleExternalTaskConfigurationType.getInstance().factory
 
     override fun isConfigurationFromContext(configuration: GradleRunConfiguration, context: ConfigurationContext): Boolean {
-        return true
+        val location = context.location ?: return false
+        val module = context.module.asNativeModule() ?: return false
+        val function = location.psiElement.parentOfType<KtFunction>() ?: return false
+
+        val runTasks = getDebugRunTasks(function)
+        if (runTasks.isEmpty()) return false
+
+        return configuration.settings.externalProjectPath == ExternalSystemApiUtil.getExternalProjectPath(module)
+                && configuration.settings.taskNames == runTasks
     }
 
     override fun setupConfigurationFromContext(
@@ -42,26 +51,32 @@ class KotlinNativeRunConfigurationProducer :
         context: ConfigurationContext,
         sourceElement: Ref<PsiElement>
     ): Boolean {
-        if (sourceElement.isNull) return false
-        val location = context.location ?: return false
-        val module = location.module?.asNativeModule() ?: return false
-
         if (GradleConstants.SYSTEM_ID != configuration.settings.externalSystemId) return false
+        val module = context.module.asNativeModule() ?: return false
+        val function = sourceElement.get()?.parentOfType<KtFunction>() ?: return false
 
-        val settings = KotlinFacetSettingsProvider.getInstance(module.project)?.getSettings(module) ?: return false
-        val runTask = settings.externalSystemNativeRunTasks
-            .firstOrNull { it.taskName.startsWith("runDebug", true) }
-            ?.taskName ?: return false
+        val runTasks = getDebugRunTasks(function)
+        if (runTasks.isEmpty()) return false
 
         configuration.settings.apply {
-            externalProjectPath = ExternalSystemApiUtil.getExternalProjectPath(context.module)
-            taskNames = listOf(runTask)
+            externalProjectPath = ExternalSystemApiUtil.getExternalProjectPath(module)
+            taskNames = runTasks
         }
-        configuration.name = runTask
+        configuration.name = runTasks.first()
         configuration.isScriptDebugEnabled = false
 
         return true
     }
 
     private fun Module.asNativeModule(): Module? = takeIf { it.platform.isNative() }
+
+    private fun getDebugRunTasks(function: KtFunction): List<String> {
+        val functionName = function.fqName?.asString() ?: return emptyList()
+        val module = function.module ?: return emptyList()
+        val settings = KotlinFacetSettingsProvider.getInstance(function.project)?.getSettings(module) ?: return emptyList()
+
+        return settings.externalSystemNativeRunTasks
+            .filter { it.debuggable && it.entryPoint == functionName }
+            .map { it.taskName }
+    }
 }

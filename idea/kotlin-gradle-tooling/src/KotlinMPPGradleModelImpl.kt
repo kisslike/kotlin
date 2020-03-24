@@ -162,7 +162,7 @@ data class KotlinTargetImpl(
     override val disambiguationClassifier: String?,
     override val platform: KotlinPlatform,
     override val compilations: Collection<KotlinCompilation>,
-    override val nativeRunTasks: Collection<KotlinRunTask>,
+    override val nativeRunTasks: Collection<KotlinNativeRunTask>,
     override val testTasks: Collection<KotlinRunTask>,
     override val jar: KotlinTargetJar?,
     override val konanArtifacts: List<KonanArtifactModel>
@@ -180,10 +180,12 @@ data class KotlinTargetImpl(
             }
         }.toList(),
         target.nativeRunTasks.map { initialTask ->
-            (cloningCache[initialTask] as? KotlinRunTask)
-                ?: KotlinRunTaskImpl(
+            (cloningCache[initialTask] as? KotlinNativeRunTask)
+                ?: KotlinNativeRunTaskImpl(
                     initialTask.taskName,
-                    initialTask.compilationName
+                    initialTask.compilationName,
+                    initialTask.entryPoint,
+                    initialTask.debuggable
                 ).also {
                     cloningCache[initialTask] = it
                 }
@@ -206,6 +208,13 @@ data class KotlinRunTaskImpl(
     override val taskName: String,
     override val compilationName: String
 ) : KotlinRunTask
+
+data class KotlinNativeRunTaskImpl(
+    override val taskName: String,
+    override val compilationName: String,
+    override val entryPoint: String,
+    override val debuggable: Boolean
+) : KotlinNativeRunTask
 
 data class ExtraFeaturesImpl(
     override val coroutinesState: String?,

@@ -424,7 +424,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         )
     }
 
-    private fun getNativeRunTasks(project: Project): Collection<KotlinRunTask> {
+    private fun getNativeRunTasks(project: Project): Collection<KotlinNativeRunTask> {
         val kotlinExtension = project.extensions.findByName("kotlin") ?: return emptyList()
         val targets =
             kotlinExtension::class.java.getMethodOrNull("getTargets")?.invoke(kotlinExtension) as? Collection<Any> ?: return emptyList()
@@ -436,9 +436,11 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
             val compilation = binary.javaClass.getMethodOrNull("getCompilation")?.invoke(binary)
             val compilationName = compilation?.javaClass?.getMethodOrNull("getCompilationName")?.invoke(compilation)?.toString()
                 ?: KotlinCompilation.MAIN_COMPILATION_NAME
-            KotlinRunTaskImpl(
+            KotlinNativeRunTaskImpl(
                 binary::class.java.getMethod("getRunTaskName").invoke(binary) as String,
-                compilationName
+                compilationName,
+                binary::class.java.getMethod("getEntryPoint").invoke(binary) as String,
+                binary::class.java.getMethod("getDebuggable").invoke(binary) as Boolean
             )
         }
     }

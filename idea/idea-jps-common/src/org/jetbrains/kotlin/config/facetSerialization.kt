@@ -130,7 +130,7 @@ private fun readV2AndLaterConfig(element: Element): KotlinFacetSettings {
             externalSystemTestTasks = it.mapNotNull { ExternalSystemRunTask.fromStringRepresentation(it) }
         }
         readElementsList(element, "externalSystemNativeRunTasks", "externalSystemNativeRunTask")?.let {
-            externalSystemNativeRunTasks = it.mapNotNull { ExternalSystemRunTask.fromStringRepresentation(it) }
+            externalSystemNativeRunTasks = it.mapNotNull { ExternalSystemNativeRunTask.fromStringRepresentation(it) }
         }
 
         element.getChild("sourceSets")?.let {

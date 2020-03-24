@@ -11,7 +11,9 @@ import com.intellij.openapi.roots.libraries.DummyLibraryProperties
 import com.intellij.openapi.roots.libraries.Library
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
 import com.intellij.openapi.roots.ui.configuration.libraries.CustomLibraryDescription
+import com.intellij.psi.util.parentOfType
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
+import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.gradle.KotlinPlatform
 import org.jetbrains.kotlin.idea.caches.project.isTestModule
@@ -58,15 +60,22 @@ class NativeIdePlatformKindTooling : IdePlatformKindTooling() {
     }
 
     override fun acceptsAsEntryPoint(function: KtFunction): Boolean {
+        if (!function.isMainFunction()) return false
+        val functionName = function.fqName?.asString() ?: return false
+
+        val module = function.module ?: return false
+        if (module.isTestModule) return false
+
+        val settings = KotlinFacetSettingsProvider.getInstance(function.project)?.getSettings(module) ?: return false
+        val hasRunTask = settings.externalSystemNativeRunTasks.any { it.entryPoint == functionName }
+        if (!hasRunTask) return false
+
         val hasRunConfigurations = RunConfigurationProducer
             .getProducers(function.project)
             .asSequence()
             .filterIsInstance<KotlinNativeRunConfigurationProvider>()
             .any { !it.isForTests }
-
         if (!hasRunConfigurations) return false
-        if (!function.isMainFunction()) return false
-        if (function.module?.isTestModule == true) return false
 
         return true
     }
