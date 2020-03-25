@@ -6,7 +6,8 @@ plugins {
 dependencies {
     testCompileOnly(toolsJar())
     testRuntimeOnly(toolsJar())
-    
+
+    testRuntimeOnly(intellijPluginDep("gradle"))
     testCompile(project(":idea"))
     testCompile(projectTests(":idea"))
     testCompile(projectTests(":compiler:tests-common"))
