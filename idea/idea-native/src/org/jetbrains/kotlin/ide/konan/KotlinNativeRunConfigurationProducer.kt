@@ -36,8 +36,8 @@ class KotlinNativeRunConfigurationProducer :
 
     override fun isConfigurationFromContext(configuration: GradleRunConfiguration, context: ConfigurationContext): Boolean {
         val location = context.location ?: return false
-        val module = context.module.asNativeModule() ?: return false
         val function = location.psiElement.parentOfType<KtFunction>() ?: return false
+        val module = function.module.asNativeModule() ?: return false
 
         val runTasks = getDebugRunTasks(function)
         if (runTasks.isEmpty()) return false
@@ -52,8 +52,8 @@ class KotlinNativeRunConfigurationProducer :
         sourceElement: Ref<PsiElement>
     ): Boolean {
         if (GradleConstants.SYSTEM_ID != configuration.settings.externalSystemId) return false
-        val module = context.module.asNativeModule() ?: return false
         val function = sourceElement.get()?.parentOfType<KtFunction>() ?: return false
+        val module = function.module.asNativeModule() ?: return false
 
         val runTasks = getDebugRunTasks(function)
         if (runTasks.isEmpty()) return false
@@ -68,7 +68,7 @@ class KotlinNativeRunConfigurationProducer :
         return true
     }
 
-    private fun Module.asNativeModule(): Module? = takeIf { it.platform.isNative() }
+    private fun Module?.asNativeModule(): Module? = takeIf { it?.platform.isNative() }
 
     private fun getDebugRunTasks(function: KtFunction): List<String> {
         val functionName = function.fqName?.asString() ?: return emptyList()
