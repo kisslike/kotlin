@@ -48,7 +48,6 @@ interface LazyIrProvider : IrProvider {
 
 interface IrDeserializer : IrProvider {
     fun init(moduleFragment: IrModuleFragment) {}
-    fun declareForwardDeclarations()
 }
 
 interface ReferenceSymbolTable {

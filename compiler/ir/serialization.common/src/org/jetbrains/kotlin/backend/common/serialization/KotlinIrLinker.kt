@@ -41,8 +41,7 @@ abstract class KotlinIrLinker(
     val logger: LoggingContext,
     val builtIns: IrBuiltIns,
     val symbolTable: SymbolTable,
-    private val exportedDependencies: List<ModuleDescriptor>,
-    private val forwardModuleDescriptor: ModuleDescriptor?
+    private val exportedDependencies: List<ModuleDescriptor>
 ) : IrDeserializer {
 
     // Kotlin-MPP related data. Consider some refactoring
@@ -52,9 +51,6 @@ abstract class KotlinIrLinker(
     private val actualSymbols = mutableMapOf<IdSignature, IrSymbol>()
 
     private val modulesWithReachableTopLevels = mutableSetOf<IrModuleDeserializer>()
-
-    //TODO: This is Native specific. Eliminate me.
-    private val forwardDeclarations = mutableSetOf<IrSymbol>()
 
     protected val deserializersForModules = mutableMapOf<ModuleDescriptor, IrModuleDeserializer>()
 
@@ -297,10 +293,6 @@ abstract class KotlinIrLinker(
         private fun loadStringProto(index: Int): String {
             return String(readString(moduleDeserializer.moduleDescriptor, fileIndex, index))
         }
-
-//        private fun isGlobalIdSignature(isSignature: IdSignature): Boolean {
-//            return isSignature in globalDeserializationState || isSpecialSignature(isSignature)
-//        }
 
         private fun getModuleForTopLevelId(idSignature: IdSignature): IrModuleDeserializer? {
             if (idSignature in moduleDeserializer) return moduleDeserializer
@@ -588,41 +580,6 @@ abstract class KotlinIrLinker(
         }
 
         return symbol.owner as IrDeclaration
-    }
-
-    // TODO: This is Native specific. Eliminate me.
-    override fun declareForwardDeclarations() {
-        if (forwardModuleDescriptor == null) return
-
-//        val packageFragments = forwardDeclarations.map { it.descriptor.findPackage() }.distinct()
-
-        // We don't bother making a real IR module here, as we have no need in it any later.
-        // All we need is just to declare forward declarations in the symbol table
-        // In case you need a full fledged module, turn the forEach into a map and collect
-        // produced files into an IrModuleFragment.
-
-//        packageFragments.forEach { packageFragment ->
-//            val symbol = IrFileSymbolImpl(packageFragment)
-//            val file = IrFileImpl(NaiveSourceBasedFileEntryImpl("forward declarations pseudo-file"), symbol)
-//            val symbols = forwardDeclarations
-//                .filter { !it.isBound }
-//                .filter { it.descriptor.findPackage() == packageFragment }
-//            val declarations = symbols.map {
-//
-//                val classDescriptor = it.descriptor as ClassDescriptor
-//                val declaration = symbolTable.declareClass(
-//                    UNDEFINED_OFFSET, UNDEFINED_OFFSET, irrelevantOrigin,
-//                    classDescriptor,
-//                    classDescriptor.modality
-//                ) { symbol: IrClassSymbol -> IrClassImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, irrelevantOrigin, symbol) }
-//                    .also {
-//                        it.parent = file
-//                    }
-//                declaration
-//
-//            }
-//            file.declarations.addAll(declarations)
-//        }
     }
 
     protected open fun createCurrentModuleDeserializer(moduleFragment: IrModuleFragment, dependencies: Collection<IrModuleDeserializer>): IrModuleDeserializer =

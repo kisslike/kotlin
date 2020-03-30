@@ -15,11 +15,8 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.konan.KlibModuleOrigin
-import org.jetbrains.kotlin.descriptors.konan.klibModuleOrigin
 import org.jetbrains.kotlin.descriptors.konan.kotlinLibrary
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
 import org.jetbrains.kotlin.ir.declarations.impl.IrModuleFragmentImpl
 import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -30,7 +27,7 @@ import org.jetbrains.kotlin.load.java.descriptors.*
 import org.jetbrains.kotlin.name.Name
 
 class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable, private val stubGenerator: DeclarationStubGenerator) :
-    KotlinIrLinker(logger, builtIns, symbolTable, emptyList(), null) {
+    KotlinIrLinker(logger, builtIns, symbolTable, emptyList()) {
 
 //    override fun handleNoModuleDeserializerFound(idSignature: IdSignature): DeserializationState<*> {
 //        // TODO: Implement special java-module deserializer instead of this hack

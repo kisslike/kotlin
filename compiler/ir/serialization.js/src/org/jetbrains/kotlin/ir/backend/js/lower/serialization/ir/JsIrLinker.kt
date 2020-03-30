@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.ir.descriptors.IrFunctionFactory
 import org.jetbrains.kotlin.ir.util.SymbolTable
 
 class JsIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable) :
-    KotlinIrLinker(logger, builtIns, symbolTable, emptyList(), null) {
+    KotlinIrLinker(logger, builtIns, symbolTable, emptyList()) {
 
     override fun reader(moduleDescriptor: ModuleDescriptor, fileIndex: Int, idSigIndex: Int) =
         moduleDescriptor.kotlinLibrary.irDeclaration(idSigIndex, fileIndex)
