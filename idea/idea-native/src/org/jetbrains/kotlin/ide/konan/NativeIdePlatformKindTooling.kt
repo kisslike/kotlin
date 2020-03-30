@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.gradle.KotlinPlatform
 import org.jetbrains.kotlin.idea.caches.project.isTestModule
+import org.jetbrains.kotlin.idea.facet.externalSystemNativeMainRunTasks
 import org.jetbrains.kotlin.idea.framework.KotlinLibraryKind
 import org.jetbrains.kotlin.idea.isMainFunction
 import org.jetbrains.kotlin.idea.platform.IdePlatformKindTooling
@@ -66,8 +67,7 @@ class NativeIdePlatformKindTooling : IdePlatformKindTooling() {
         val module = function.module ?: return false
         if (module.isTestModule) return false
 
-        val settings = KotlinFacetSettingsProvider.getInstance(function.project)?.getSettings(module) ?: return false
-        val hasRunTask = settings.externalSystemNativeRunTasks.any { it.entryPoint == functionName }
+        val hasRunTask = module.externalSystemNativeMainRunTasks().any { it.entryPoint == functionName }
         if (!hasRunTask) return false
 
         val hasRunConfigurations = RunConfigurationProducer

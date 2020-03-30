@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.gradle
 
 import org.gradle.api.tasks.Exec
 import java.io.File
+import java.lang.IllegalStateException
 
 class KotlinSourceSetProto(
     val name: String,
@@ -162,8 +163,7 @@ data class KotlinTargetImpl(
     override val disambiguationClassifier: String?,
     override val platform: KotlinPlatform,
     override val compilations: Collection<KotlinCompilation>,
-    override val nativeRunTasks: Collection<KotlinNativeRunTask>,
-    override val testTasks: Collection<KotlinRunTask>,
+    override val runTasks: Collection<KotlinRunTask>,
     override val jar: KotlinTargetJar?,
     override val konanArtifacts: List<KonanArtifactModel>
 ) : KotlinTarget {
@@ -179,42 +179,44 @@ data class KotlinTargetImpl(
                 cloningCache[initialCompilation] = it
             }
         }.toList(),
-        target.nativeRunTasks.map { initialTask ->
-            (cloningCache[initialTask] as? KotlinNativeRunTask)
-                ?: KotlinNativeRunTaskImpl(
-                    initialTask.taskName,
-                    initialTask.compilationName,
-                    initialTask.entryPoint,
-                    initialTask.debuggable
-                ).also {
-                    cloningCache[initialTask] = it
+        target.runTasks.map { initialTask ->
+            val cached: KotlinRunTask? = cloningCache[initialTask] as? KotlinRunTask
+            if (cached == null) {
+                val task: KotlinRunTask = when (initialTask) {
+                    is KotlinTestRunTask -> KotlinTestRunTaskImpl(
+                        initialTask.taskName,
+                        initialTask.compilationName
+                    )
+                    is KotlinNativeMainRunTask -> KotlinNativeMainRunTaskImpl(
+                        initialTask.taskName,
+                        initialTask.compilationName,
+                        initialTask.entryPoint,
+                        initialTask.debuggable
+                    )
+                    else -> throw IllegalStateException("Unknown KotlinRunTask implementation: ${initialTask.javaClass.simpleName}")
                 }
-        },
-        target.testTasks.map { initialTestTask ->
-            (cloningCache[initialTestTask] as? KotlinRunTask)
-                ?: KotlinRunTaskImpl(
-                    initialTestTask.taskName,
-                    initialTestTask.compilationName
-                ).also {
-                    cloningCache[initialTestTask] = it
-                }
+                cloningCache[initialTask] = task
+                return@map task
+            } else {
+                return@map cached!!
+            }
         },
         KotlinTargetJarImpl(target.jar?.archiveFile),
         target.konanArtifacts.map { KonanArtifactModelImpl(it) }.toList()
     )
 }
 
-data class KotlinRunTaskImpl(
+data class KotlinTestRunTaskImpl(
     override val taskName: String,
     override val compilationName: String
-) : KotlinRunTask
+) : KotlinTestRunTask
 
-data class KotlinNativeRunTaskImpl(
+data class KotlinNativeMainRunTaskImpl(
     override val taskName: String,
     override val compilationName: String,
     override val entryPoint: String,
     override val debuggable: Boolean
-) : KotlinNativeRunTask
+) : KotlinNativeMainRunTask
 
 data class ExtraFeaturesImpl(
     override val coroutinesState: String?,

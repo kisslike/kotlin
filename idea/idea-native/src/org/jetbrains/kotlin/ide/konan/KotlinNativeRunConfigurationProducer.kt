@@ -14,6 +14,7 @@ import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.parentOfType
 import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
+import org.jetbrains.kotlin.idea.facet.externalSystemNativeMainRunTasks
 import org.jetbrains.kotlin.idea.isMainFunction
 import org.jetbrains.kotlin.idea.project.platform
 import org.jetbrains.kotlin.idea.util.module
@@ -39,11 +40,11 @@ class KotlinNativeRunConfigurationProducer :
         val function = location.psiElement.parentOfType<KtFunction>() ?: return false
         val module = function.module.asNativeModule() ?: return false
 
-        val runTasks = getDebugRunTasks(function)
-        if (runTasks.isEmpty()) return false
+        val mainRunTasks = getDebugMainRunTasks(function)
+        if (mainRunTasks.isEmpty()) return false
 
         return configuration.settings.externalProjectPath == ExternalSystemApiUtil.getExternalProjectPath(module)
-                && configuration.settings.taskNames == runTasks
+                && configuration.settings.taskNames == mainRunTasks
     }
 
     override fun setupConfigurationFromContext(
@@ -55,14 +56,14 @@ class KotlinNativeRunConfigurationProducer :
         val function = sourceElement.get()?.parentOfType<KtFunction>() ?: return false
         val module = function.module.asNativeModule() ?: return false
 
-        val runTasks = getDebugRunTasks(function)
-        if (runTasks.isEmpty()) return false
+        val mainRunTasks = getDebugMainRunTasks(function)
+        if (mainRunTasks.isEmpty()) return false
 
         configuration.settings.apply {
             externalProjectPath = ExternalSystemApiUtil.getExternalProjectPath(module)
-            taskNames = runTasks
+            taskNames = mainRunTasks
         }
-        configuration.name = runTasks.first()
+        configuration.name = mainRunTasks.first()
         configuration.isScriptDebugEnabled = false
 
         return true
@@ -70,12 +71,11 @@ class KotlinNativeRunConfigurationProducer :
 
     private fun Module?.asNativeModule(): Module? = takeIf { it?.platform.isNative() }
 
-    private fun getDebugRunTasks(function: KtFunction): List<String> {
+    private fun getDebugMainRunTasks(function: KtFunction): List<String> {
         val functionName = function.fqName?.asString() ?: return emptyList()
         val module = function.module ?: return emptyList()
-        val settings = KotlinFacetSettingsProvider.getInstance(function.project)?.getSettings(module) ?: return emptyList()
 
-        return settings.externalSystemNativeRunTasks
+        return module.externalSystemNativeMainRunTasks()
             .filter { it.debuggable && it.entryPoint == functionName }
             .map { it.taskName }
     }

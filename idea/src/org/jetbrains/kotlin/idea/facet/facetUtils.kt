@@ -157,7 +157,7 @@ fun KotlinFacet.configureFacet(
     platform: TargetPlatform?,
     modelsProvider: IdeModifiableModelsProvider
 ) {
-    configureFacet(compilerVersion, coroutineSupport, platform, modelsProvider, false, emptyList(), emptyList(), emptyList())
+    configureFacet(compilerVersion, coroutineSupport, platform, modelsProvider, false, emptyList(), emptyList())
 }
 
 fun KotlinFacet.configureFacet(
@@ -167,8 +167,7 @@ fun KotlinFacet.configureFacet(
     modelsProvider: IdeModifiableModelsProvider,
     hmppEnabled: Boolean,
     pureKotlinSourceFolders: List<String>,
-    dependsOnList: List<String>,
-    nativeRunTask: List<ExternalSystemNativeRunTask>
+    dependsOnList: List<String>
 ) {
     val module = module
     with(configuration.settings) {
@@ -177,7 +176,6 @@ fun KotlinFacet.configureFacet(
         compilerSettings = null
         isHmppEnabled = hmppEnabled
         dependsOnModuleNames = dependsOnList
-        externalSystemNativeRunTasks = nativeRunTask
         initializeIfNeeded(
             module,
             modelsProvider.getModifiableRootModel(module),
@@ -196,10 +194,13 @@ fun KotlinFacet.configureFacet(
     module.externalCompilerVersion = compilerVersion
 }
 
-fun Module.externalSystemTestTasks(): List<ExternalSystemRunTask> {
+private fun Module.externalSystemRunTasks(): List<ExternalSystemRunTask> {
     val settingsProvider = KotlinFacetSettingsProvider.getInstance(project) ?: return emptyList()
-    return settingsProvider.getInitializedSettings(this).externalSystemTestTasks
+    return settingsProvider.getInitializedSettings(this).externalSystemRunTasks
 }
+
+fun Module.externalSystemTestRunTasks() = externalSystemRunTasks().filterIsInstance<ExternalSystemTestRunTask>()
+fun Module.externalSystemNativeMainRunTasks() = externalSystemRunTasks().filterIsInstance<ExternalSystemNativeMainRunTask>()
 
 @Suppress("DEPRECATION_ERROR", "DeprecatedCallableAddReplaceWith")
 @Deprecated(

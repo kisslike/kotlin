@@ -140,32 +140,42 @@ val KotlinMultiplatformVersion?.isNewMPP: Boolean
 val KotlinMultiplatformVersion?.isHmpp: Boolean
     get() = this == KotlinMultiplatformVersion.M3
 
-data class ExternalSystemRunTask(val taskName: String, val externalSystemProjectId: String, val targetName: String?) {
+interface ExternalSystemRunTask {
+    val taskName: String
+    val externalSystemProjectId: String
+    val targetName: String?
+}
+
+data class ExternalSystemTestRunTask(
+    override val taskName: String,
+    override val externalSystemProjectId: String,
+    override val targetName: String?
+) : ExternalSystemRunTask {
 
     fun toStringRepresentation() = "$taskName|$externalSystemProjectId|$targetName"
 
     companion object {
         fun fromStringRepresentation(line: String) =
-            line.split("|").let { if (it.size == 3) ExternalSystemRunTask(it[0], it[1], it[2]) else null }
+            line.split("|").let { if (it.size == 3) ExternalSystemTestRunTask(it[0], it[1], it[2]) else null }
     }
 
     override fun toString() = "$taskName@$externalSystemProjectId [$targetName]"
 }
 
-data class ExternalSystemNativeRunTask(
-    val taskName: String,
+data class ExternalSystemNativeMainRunTask(
+    override val taskName: String,
+    override val externalSystemProjectId: String,
+    override val targetName: String?,
     val entryPoint: String,
     val debuggable: Boolean,
-    val externalSystemProjectId: String,
-    val targetName: String?
-) {
+) : ExternalSystemRunTask {
 
-    fun toStringRepresentation() = "$taskName|$entryPoint|$debuggable|$externalSystemProjectId|$targetName"
+    fun toStringRepresentation() = "$taskName|$externalSystemProjectId|$targetName|$entryPoint|$debuggable"
 
     companion object {
-        fun fromStringRepresentation(line: String): ExternalSystemNativeRunTask? =
+        fun fromStringRepresentation(line: String): ExternalSystemNativeMainRunTask? =
             line.split("|").let {
-                if (it.size == 5) ExternalSystemNativeRunTask(it[0], it[1], it[2].toBoolean(), it[3], it[4]) else null
+                if (it.size == 5) ExternalSystemNativeMainRunTask(it[0], it[1], it[2], it[3], it[4].toBoolean()) else null
             }
     }
 }
@@ -249,8 +259,7 @@ class KotlinFacetSettings {
             return field
         }
 
-    var externalSystemTestTasks: List<ExternalSystemRunTask> = emptyList()
-    var externalSystemNativeRunTasks: List<ExternalSystemNativeRunTask> = emptyList()
+    var externalSystemRunTasks: List<ExternalSystemRunTask> = emptyList()
 
     @Suppress("DEPRECATION_ERROR")
     @Deprecated(

@@ -10,7 +10,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.config.ExternalSystemRunTask
-import org.jetbrains.kotlin.idea.facet.externalSystemTestTasks
+import org.jetbrains.kotlin.idea.facet.externalSystemTestRunTasks
 import org.jetbrains.kotlin.idea.util.module
 import org.jetbrains.plugins.gradle.execution.test.runner.*
 import org.jetbrains.plugins.gradle.util.TasksToRun
@@ -47,7 +47,7 @@ class MultiplatformTestTasksChooser : TestTasksChooser() {
             val module = element.module ?: continue
             val sourceFile = getSourceFile(element) ?: continue
 
-            val groupedTasks = module.externalSystemTestTasks().groupBy { it.targetName }
+            val groupedTasks = module.externalSystemTestRunTasks().groupBy { it.targetName }
 
             for ((group, tasksInGroup) in groupedTasks) {
                 if (tasksInGroup.isEmpty()) {
