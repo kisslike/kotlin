@@ -126,8 +126,8 @@ private fun readV2AndLaterConfig(element: Element): KotlinFacetSettings {
         this.targetPlatform = targetPlatform
         readElementsList(element, "implements", "implement")?.let { implementedModuleNames = it }
         readElementsList(element, "dependsOnModuleNames", "dependsOn")?.let { dependsOnModuleNames = it }
-        element.getChild("externalSystemRunTasks")?.let {
-            val testRunTasks = it.getChildren("externalSystemTestRunTask")
+        element.getChild("externalSystemTestTasks")?.let {
+            val testRunTasks = it.getChildren("externalSystemTestTask")
                 .mapNotNull { (it.content.firstOrNull() as? Text)?.textTrim }
                 .mapNotNull { ExternalSystemTestRunTask.fromStringRepresentation(it) }
             val nativeMainRunTasks = it.getChildren("externalSystemNativeMainRunTask")
@@ -327,12 +327,12 @@ private fun KotlinFacetSettings.writeLatestConfig(element: Element) {
     }
     if (externalSystemRunTasks.isNotEmpty()) {
         element.addContent(
-            Element("externalSystemRunTasks").apply {
+            Element("externalSystemTestTasks").apply {
                 externalSystemRunTasks.forEach { task ->
                     when(task) {
                         is ExternalSystemTestRunTask -> {
                             addContent(
-                                Element("externalSystemTestRunTask").apply { addContent(task.toStringRepresentation()) }
+                                Element("externalSystemTestTask").apply { addContent(task.toStringRepresentation()) }
                             )
                         }
                         is ExternalSystemNativeMainRunTask -> {
