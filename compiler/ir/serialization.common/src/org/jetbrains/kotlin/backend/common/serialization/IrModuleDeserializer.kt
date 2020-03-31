@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.descriptors.WrappedDeclarationDescriptor
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.util.IdSignature
+import org.jetbrains.kotlin.ir.util.IrExtensionGenerator
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -188,7 +189,8 @@ class IrModuleDeserializerWithBuiltIns(
 open class CurrentModuleDeserializer(
     override val moduleFragment: IrModuleFragment,
     override val moduleDependencies: Collection<IrModuleDeserializer>,
-    private val symbolTable: SymbolTable
+    private val symbolTable: SymbolTable,
+    private val extensions: Collection<IrExtensionGenerator>
 ) : IrModuleDeserializer(moduleFragment.descriptor) {
     override fun contains(idSig: IdSignature): Boolean = false // TODO:
 
@@ -215,6 +217,14 @@ open class CurrentModuleDeserializer(
     }
 
     private fun declareIrDeclaration(symbol: IrSymbol): IrDeclaration {
+        for (extension in extensions) {
+            extension.declare(symbol)?.let { return it }
+        }
+
+        return declareIrDeclarationDefault(symbol)
+    }
+
+    private fun declareIrDeclarationDefault(symbol: IrSymbol): IrDeclaration {
         return when (symbol) {
             is IrClassSymbol -> symbolTable.declareClass(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
             is IrConstructorSymbol -> symbolTable.declareConstructor(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)

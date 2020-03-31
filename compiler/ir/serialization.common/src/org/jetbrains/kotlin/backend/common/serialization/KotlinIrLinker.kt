@@ -582,16 +582,18 @@ abstract class KotlinIrLinker(
         return symbol.owner as IrDeclaration
     }
 
-    protected open fun createCurrentModuleDeserializer(moduleFragment: IrModuleFragment, dependencies: Collection<IrModuleDeserializer>): IrModuleDeserializer =
-        CurrentModuleDeserializer(moduleFragment, dependencies, symbolTable)
+    protected open fun createCurrentModuleDeserializer(moduleFragment: IrModuleFragment, dependencies: Collection<IrModuleDeserializer>, extensions: Collection<IrExtensionGenerator>): IrModuleDeserializer =
+        CurrentModuleDeserializer(moduleFragment, dependencies, symbolTable, extensions)
 
-    override fun init(moduleFragment: IrModuleFragment) {
-        val currentModuleDependencies = moduleFragment.descriptor.allDependencyModules.map {
-            deserializersForModules[it] ?: error("No deserializer found for $it")
+    override fun init(moduleFragment: IrModuleFragment?, extensions: Collection<IrExtensionGenerator>) {
+        if (moduleFragment != null) {
+            val currentModuleDependencies = moduleFragment.descriptor.allDependencyModules.map {
+                deserializersForModules[it] ?: error("No deserializer found for $it")
+            }
+            val currentModuleDeserializer = createCurrentModuleDeserializer(moduleFragment, currentModuleDependencies, extensions)
+            deserializersForModules[moduleFragment.descriptor] =
+                maybeWrapWithBuiltInAndInit(moduleFragment.descriptor, currentModuleDeserializer)
         }
-        val currentModuleDeserializer = createCurrentModuleDeserializer(moduleFragment, currentModuleDependencies)
-        deserializersForModules[moduleFragment.descriptor] =
-            maybeWrapWithBuiltInAndInit(moduleFragment.descriptor, currentModuleDeserializer)
         deserializersForModules.values.forEach { it.init() }
     }
 

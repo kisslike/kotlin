@@ -33,8 +33,9 @@ object JvmBackendFacade {
         val psi2ir = Psi2IrTranslator(state.languageVersionSettings, signaturer = signaturer)
         val psi2irContext = psi2ir.createGeneratorContext(state.module, state.bindingContext, extensions = extensions)
         val psi2irGenerator = psi2ir.createModuleGenerator(psi2irContext)
+        val pluginExtensions = IrGenerationExtension.getInstances(state.project)
 
-        for (extension in IrGenerationExtension.getInstances(state.project)) {
+        for (extension in pluginExtensions) {
             psi2ir.addPostprocessingStep { module ->
                 extension.generate(
                     module,
@@ -53,15 +54,15 @@ object JvmBackendFacade {
         val stubGenerator = DeclarationStubGenerator(
             psi2irContext.moduleDescriptor, psi2irContext.symbolTable, psi2irContext.irBuiltIns.languageVersionSettings, extensions
         )
-        val deserializer = JvmIrLinker(EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable, stubGenerator)
-        val dependencies = psi2irContext.moduleDescriptor.allDependencyModules.map { deserializer.deserializeIrModuleHeader(it) }
-        val irProviders = listOf(deserializer, stubGenerator)
+        val irLinker = JvmIrLinker(EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable, stubGenerator)
+        val dependencies = psi2irContext.moduleDescriptor.allDependencyModules.map { irLinker.deserializeIrModuleHeader(it) }
+        val irProviders = listOf(irLinker, stubGenerator)
 
         stubGenerator.setIrProviders(irProviders)
-        deserializer.init(psi2irGenerator.moduleFragment)
+        irLinker.init(psi2irGenerator.moduleFragment, pluginExtensions)
 
         val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, irProviders, expectDescriptorToSymbol = null)
-        deserializer.postProcess()
+        irLinker.postProcess()
         // We need to compile all files we reference in Klibs
         irModuleFragment.files.addAll(dependencies.flatMap { it.files })
 
