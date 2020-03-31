@@ -84,14 +84,14 @@ class Psi2IrTranslator(
         // since plugins must work with non-lazy IR
         moduleGenerator.generateUnboundSymbolsAsDependencies(irProviders)
 
+        postprocessingSteps.forEach { it.invoke(irModule) }
+
         return irModule
     }
 
     private fun postprocess(context: GeneratorContext, irElement: IrModuleFragment) {
         insertImplicitCasts(irElement, context)
         generateAnnotationsForDeclarations(context, irElement)
-
-        postprocessingSteps.forEach { it(irElement) }
 
         irElement.patchDeclarationParents()
     }
