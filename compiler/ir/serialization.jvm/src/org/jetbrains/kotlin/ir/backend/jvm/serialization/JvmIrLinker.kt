@@ -91,7 +91,7 @@ class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Sym
         JvmCurrentModuleDeserializer(moduleFragment, dependencies)
 
     private inner class JvmCurrentModuleDeserializer(moduleFragment: IrModuleFragment, dependencies: Collection<IrModuleDeserializer>) :
-        CurrentModuleDeserializer(moduleFragment, dependencies) {
+        CurrentModuleDeserializer(moduleFragment, dependencies, symbolTable) {
         override fun declareIrSymbol(symbol: IrSymbol) {
             val descriptor = symbol.descriptor
 

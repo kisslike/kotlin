@@ -583,7 +583,7 @@ abstract class KotlinIrLinker(
     }
 
     protected open fun createCurrentModuleDeserializer(moduleFragment: IrModuleFragment, dependencies: Collection<IrModuleDeserializer>): IrModuleDeserializer =
-        CurrentModuleDeserializer(moduleFragment, dependencies)
+        CurrentModuleDeserializer(moduleFragment, dependencies, symbolTable)
 
     override fun init(moduleFragment: IrModuleFragment) {
         val currentModuleDependencies = moduleFragment.descriptor.allDependencyModules.map {

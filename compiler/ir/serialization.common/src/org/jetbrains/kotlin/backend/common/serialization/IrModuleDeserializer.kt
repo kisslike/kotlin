@@ -7,14 +7,15 @@ package org.jetbrains.kotlin.backend.common.serialization
 
 import org.jetbrains.kotlin.backend.common.serialization.encodings.BinarySymbolData
 import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.descriptors.IrAbstractFunctionFactory
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.descriptors.WrappedDeclarationDescriptor
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.util.IdSignature
+import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -186,7 +187,8 @@ class IrModuleDeserializerWithBuiltIns(
 
 open class CurrentModuleDeserializer(
     override val moduleFragment: IrModuleFragment,
-    override val moduleDependencies: Collection<IrModuleDeserializer>
+    override val moduleDependencies: Collection<IrModuleDeserializer>,
+    private val symbolTable: SymbolTable
 ) : IrModuleDeserializer(moduleFragment.descriptor) {
     override fun contains(idSig: IdSignature): Boolean = false // TODO:
 
@@ -203,13 +205,42 @@ open class CurrentModuleDeserializer(
 
     }
 
+    private fun referenceParentDescriptor(descriptor: DeclarationDescriptor): IrSymbol {
+        return when (descriptor) {
+            is ClassDescriptor -> symbolTable.referenceClass(descriptor)
+            is PropertyDescriptor -> symbolTable.referenceProperty(descriptor)
+            is PackageFragmentDescriptor -> moduleFragment.files.single { it.symbol.descriptor === descriptor }.symbol
+            else -> error("Unexpected declaration parent $descriptor")
+        }
+    }
+
+    private fun declareIrDeclaration(symbol: IrSymbol): IrDeclaration {
+        return when (symbol) {
+            is IrClassSymbol -> symbolTable.declareClass(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
+            is IrConstructorSymbol -> symbolTable.declareConstructor(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
+            is IrSimpleFunctionSymbol -> symbolTable.declareSimpleFunction(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
+            is IrPropertySymbol -> symbolTable.declareProperty(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
+            is IrTypeAliasSymbol -> error("Implement type alias $symbol")
+            is IrEnumEntrySymbol -> symbolTable.declareEnumEntry(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
+            else -> error("Unexpected symbol $symbol")
+        }
+    }
+
     private fun declareIrSymbolImpl(symbol: IrSymbol): IrSymbolOwner {
         if (symbol.isBound) return symbol.owner
         val descriptor = symbol.descriptor
 
-        val parent = descriptor.containingDeclaration
-//        val parentSymbol =
-        TODO("Build synthetic declarations")
+        assert(descriptor !is WrappedDeclarationDescriptor<*>)
+
+        val parent = descriptor.containingDeclaration ?: error("Expect non-root declaration $descriptor")
+        val parentDeclaration = declareIrSymbolImpl(referenceParentDescriptor(parent)) as IrDeclarationContainer
+
+        val declaredDeclaration = declareIrDeclaration(symbol).also {
+            it.parent = parentDeclaration
+            parentDeclaration.declarations.add(it)
+        }
+
+        return declaredDeclaration as IrSymbolOwner
     }
 
     override fun addModuleReachableTopLevel(idSig: IdSignature) {
@@ -221,4 +252,8 @@ open class CurrentModuleDeserializer(
     }
 
     override fun postProcess() {}
+
+    companion object {
+        private const val offset = UNDEFINED_OFFSET
+    }
 }
