@@ -230,7 +230,7 @@ open class CurrentModuleDeserializer(
             is IrConstructorSymbol -> symbolTable.declareConstructor(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
             is IrSimpleFunctionSymbol -> symbolTable.declareSimpleFunction(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
             is IrPropertySymbol -> symbolTable.declareProperty(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
-            is IrTypeAliasSymbol -> error("Implement type alias $symbol")
+            is IrTypeAliasSymbol -> TODO("Implement type alias $symbol")
             is IrEnumEntrySymbol -> symbolTable.declareEnumEntry(offset, offset, IrDeclarationOrigin.DEFINED, symbol.descriptor)
             else -> error("Unexpected symbol $symbol")
         }
