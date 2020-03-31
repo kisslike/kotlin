@@ -7,7 +7,6 @@ package org.jetbrains.kotlin.gradle
 
 import org.gradle.api.tasks.Exec
 import java.io.File
-import java.lang.IllegalStateException
 
 class KotlinSourceSetProto(
     val name: String,
@@ -163,7 +162,8 @@ data class KotlinTargetImpl(
     override val disambiguationClassifier: String?,
     override val platform: KotlinPlatform,
     override val compilations: Collection<KotlinCompilation>,
-    override val runTasks: Collection<KotlinRunTask>,
+    override val testRunTasks: Collection<KotlinTestRunTask>,
+    override val nativeMainRunTasks: Collection<KotlinNativeMainRunTask>,
     override val jar: KotlinTargetJar?,
     override val konanArtifacts: List<KonanArtifactModel>
 ) : KotlinTarget {
@@ -179,27 +179,25 @@ data class KotlinTargetImpl(
                 cloningCache[initialCompilation] = it
             }
         }.toList(),
-        target.runTasks.map { initialTask ->
-            val cached: KotlinRunTask? = cloningCache[initialTask] as? KotlinRunTask
-            if (cached == null) {
-                val task: KotlinRunTask = when (initialTask) {
-                    is KotlinTestRunTask -> KotlinTestRunTaskImpl(
-                        initialTask.taskName,
-                        initialTask.compilationName
-                    )
-                    is KotlinNativeMainRunTask -> KotlinNativeMainRunTaskImpl(
-                        initialTask.taskName,
-                        initialTask.compilationName,
-                        initialTask.entryPoint,
-                        initialTask.debuggable
-                    )
-                    else -> throw IllegalStateException("Unknown KotlinRunTask implementation: ${initialTask.javaClass.simpleName}")
+        target.testRunTasks.map { initialTestTask ->
+            (cloningCache[initialTestTask] as? KotlinTestRunTask)
+                ?: KotlinTestRunTaskImpl(
+                    initialTestTask.taskName,
+                    initialTestTask.compilationName
+                ).also {
+                    cloningCache[initialTestTask] = it
                 }
-                cloningCache[initialTask] = task
-                return@map task
-            } else {
-                return@map cached!!
-            }
+        },
+        target.nativeMainRunTasks.map { initialTestTask ->
+            (cloningCache[initialTestTask] as? KotlinNativeMainRunTask)
+                ?: KotlinNativeMainRunTaskImpl(
+                    initialTestTask.taskName,
+                    initialTestTask.compilationName,
+                    initialTestTask.entryPoint,
+                    initialTestTask.debuggable
+                ).also {
+                    cloningCache[initialTestTask] = it
+                }
         },
         KotlinTargetJarImpl(target.jar?.archiveFile),
         target.konanArtifacts.map { KonanArtifactModelImpl(it) }.toList()

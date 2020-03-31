@@ -375,7 +375,8 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
             }
         }
         val jar = buildTargetJar(gradleTarget, project)
-        val runTasks = buildTestRunTasks(project, gradleTarget) + buildNativeMainRunTasks(project, platform)
+        val testRunTasks = buildTestRunTasks(project, gradleTarget)
+        val nativeMainRunTasks = buildNativeMainRunTasks(project, platform)
         val artifacts = konanArtifacts(gradleTarget)
         val target = KotlinTargetImpl(
             gradleTarget.name,
@@ -383,7 +384,8 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
             disambiguationClassifier,
             platform,
             compilations,
-            runTasks,
+            testRunTasks,
+            nativeMainRunTasks,
             jar,
             artifacts
         )
@@ -419,7 +421,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         )
     }
 
-    private fun buildNativeMainRunTasks(project: Project, platform: KotlinPlatform): Collection<KotlinRunTask> {
+    private fun buildNativeMainRunTasks(project: Project, platform: KotlinPlatform): Collection<KotlinNativeMainRunTask> {
         if (platform != KotlinPlatform.NATIVE) return emptyList()
         val kotlinExtension = project.extensions.findByName("kotlin") ?: return emptyList()
         val targets =
@@ -441,7 +443,7 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         }
     }
 
-    private fun buildTestRunTasks(project: Project, gradleTarget: Named): Collection<KotlinRunTask> {
+    private fun buildTestRunTasks(project: Project, gradleTarget: Named): Collection<KotlinTestRunTask> {
         val getTestRunsMethod = gradleTarget.javaClass.getMethodOrNull("getTestRuns")
         if (getTestRunsMethod != null) {
             val testRuns = getTestRunsMethod?.invoke(gradleTarget) as? Iterable<Any>

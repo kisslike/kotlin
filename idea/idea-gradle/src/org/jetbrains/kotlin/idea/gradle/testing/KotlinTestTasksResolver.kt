@@ -16,7 +16,6 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.util.Consumer
 import org.gradle.tooling.model.idea.IdeaModule
 import org.jetbrains.annotations.NonNls
-import org.jetbrains.kotlin.config.ExternalSystemTestRunTask
 import org.jetbrains.kotlin.gradle.KotlinMPPGradleModel
 import org.jetbrains.kotlin.gradle.KotlinMPPGradleModelBuilder
 import org.jetbrains.kotlin.idea.configuration.getMppModel
@@ -57,7 +56,7 @@ open class KotlinTestTasksResolver : AbstractProjectResolverExtension() {
     ): MutableCollection<TaskData> {
         val testTaskNames = mutableSetOf<String>().apply {
             mppModel.targets.forEach { target ->
-                target.runTasks.filterIsInstance<ExternalSystemTestRunTask>().forEach { testTaskModel ->
+                target.testRunTasks.forEach { testTaskModel ->
                     add(testTaskModel.taskName)
                 }
             }

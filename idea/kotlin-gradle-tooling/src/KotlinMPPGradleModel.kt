@@ -146,7 +146,8 @@ interface KotlinTarget : Serializable {
     val disambiguationClassifier: String?
     val platform: KotlinPlatform
     val compilations: Collection<KotlinCompilation>
-    val runTasks: Collection<KotlinRunTask>
+    val testRunTasks: Collection<KotlinTestRunTask>
+    val nativeMainRunTasks: Collection<KotlinNativeMainRunTask>
     val jar: KotlinTargetJar?
     val konanArtifacts: List<KonanArtifactModel>
 

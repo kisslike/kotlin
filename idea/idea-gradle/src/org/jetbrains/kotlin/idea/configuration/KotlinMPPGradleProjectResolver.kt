@@ -53,7 +53,6 @@ import org.jetbrains.plugins.gradle.service.project.GradleProjectResolverUtil.ge
 import org.jetbrains.plugins.gradle.service.project.ProjectResolverContext
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import java.io.File
-import java.lang.IllegalStateException
 import java.lang.reflect.Proxy
 import java.util.*
 import kotlin.collections.HashMap
@@ -428,29 +427,29 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtensionComp
             val dependsOnReverseGraph: MutableMap<String, MutableSet<KotlinSourceSet>> = HashMap()
             mppModel.targets.forEach { target ->
                 target.compilations.forEach { compilation ->
-                    val tasks = target.runTasks
+                    val testRunTasks = target.testRunTasks
                         .filter { task -> task.compilationName == compilation.name }
                         .map {
-                            when (it) {
-                                is KotlinTestRunTask -> ExternalSystemTestRunTask(
-                                    it.taskName,
-                                    getKotlinModuleId(gradleModule, compilation, resolverCtx),
-                                    target.name
-                                )
-                                is KotlinNativeMainRunTask -> ExternalSystemNativeMainRunTask(
-                                    it.taskName,
-                                    getKotlinModuleId(gradleModule, compilation, resolverCtx),
-                                    target.name,
-                                    it.entryPoint,
-                                    it.debuggable
-                                )
-                                else -> {
-                                    throw IllegalStateException("Unknown KotlinRunTask implementation: ${it.javaClass.simpleName}")
-                                }
-                            }
+                            ExternalSystemTestRunTask(
+                                it.taskName,
+                                getKotlinModuleId(gradleModule, compilation, resolverCtx),
+                                target.name
+                            )
                         }
+                    val nativeMainRunTasks = target.nativeMainRunTasks
+                        .filter { task -> task.compilationName == compilation.name }
+                        .map {
+                            ExternalSystemNativeMainRunTask(
+                                it.taskName,
+                                getKotlinModuleId(gradleModule, compilation, resolverCtx),
+                                target.name,
+                                it.entryPoint,
+                                it.debuggable
+                            )
+                        }
+                    val allRunTasks = testRunTasks + nativeMainRunTasks
                     compilation.sourceSets.forEach { sourceSet ->
-                        sourceSetToRunTasks.getOrPut(sourceSet) { LinkedHashSet() } += tasks
+                        sourceSetToRunTasks.getOrPut(sourceSet) { LinkedHashSet() } += allRunTasks
                         sourceSet.dependsOnSourceSets.forEach { dependentModule ->
                             dependsOnReverseGraph.getOrPut(dependentModule) { LinkedHashSet() } += sourceSet
                         }
