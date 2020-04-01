@@ -1329,5 +1329,3 @@ abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBu
             deserializeDeclaration(proto)
         }
 }
-
-val irrelevantOrigin = object : IrDeclarationOriginImpl("irrelevant") {}
