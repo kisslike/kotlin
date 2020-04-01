@@ -137,7 +137,7 @@ fun generateKLib(
     val irLinker = JsIrLinker(emptyLoggingContext, psi2IrContext.irBuiltIns, psi2IrContext.symbolTable)
 
     val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
-        irLinker.deserializeOnlyHeaderModule(depsDescriptors.getModuleDescriptor(it))
+        irLinker.deserializeOnlyHeaderModule(depsDescriptors.getModuleDescriptor(it), it)
     }
 
     val moduleFragment = psi2IrContext.generateModuleFragmentWithPlugins(project, files, irLinker, expectDescriptorToSymbol)
@@ -200,7 +200,7 @@ fun loadIr(
             val irLinker = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable)
 
             val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
-                irLinker.deserializeIrModuleHeader(depsDescriptors.getModuleDescriptor(it))
+                irLinker.deserializeIrModuleHeader(depsDescriptors.getModuleDescriptor(it), it)
             }
 
             val moduleFragment = psi2IrContext.generateModuleFragmentWithPlugins(project, mainModule.files, irLinker)
@@ -235,7 +235,7 @@ fun loadIr(
                     else
                         DeserializationStrategy.EXPLICITLY_EXPORTED
 
-                irLinker.deserializeIrModuleHeader(depsDescriptors.getModuleDescriptor(it), strategy)
+                irLinker.deserializeIrModuleHeader(depsDescriptors.getModuleDescriptor(it), it, strategy)
             }
 
             val moduleFragment = deserializedModuleFragments.last()

@@ -13,6 +13,10 @@ import org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen
 import org.jetbrains.kotlin.backend.jvm.lower.MultifileFacadeFileEntry
 import org.jetbrains.kotlin.backend.jvm.serialization.JvmIdSignatureDescriptor
 import org.jetbrains.kotlin.codegen.state.GenerationState
+import org.jetbrains.kotlin.descriptors.konan.DeserializedKlibModuleOrigin
+import org.jetbrains.kotlin.descriptors.konan.KlibModuleOrigin
+import org.jetbrains.kotlin.descriptors.konan.klibModuleOrigin
+import org.jetbrains.kotlin.descriptors.konan.kotlinLibrary
 import org.jetbrains.kotlin.idea.MainFunctionDetector
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.EmptyLoggingContext
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrLinker
@@ -55,7 +59,10 @@ object JvmBackendFacade {
             psi2irContext.moduleDescriptor, psi2irContext.symbolTable, psi2irContext.irBuiltIns.languageVersionSettings, extensions
         )
         val irLinker = JvmIrLinker(EmptyLoggingContext, psi2irContext.irBuiltIns, psi2irContext.symbolTable, stubGenerator)
-        val dependencies = psi2irContext.moduleDescriptor.allDependencyModules.map { irLinker.deserializeIrModuleHeader(it) }
+        val dependencies = psi2irContext.moduleDescriptor.allDependencyModules.map {
+            val kotlinLibrary = (it.getCapability(KlibModuleOrigin.CAPABILITY) as? DeserializedKlibModuleOrigin)?.library
+            irLinker.deserializeIrModuleHeader(it, kotlinLibrary)
+        }
         val irProviders = listOf(irLinker, stubGenerator)
 
         stubGenerator.setIrProviders(irProviders)

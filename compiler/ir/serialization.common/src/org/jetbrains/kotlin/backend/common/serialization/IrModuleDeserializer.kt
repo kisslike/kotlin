@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.IrExtensionGenerator
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.library.IrLibrary
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -41,6 +42,8 @@ abstract class IrModuleDeserializer(val moduleDescriptor: ModuleDescriptor) {
         assert(symbol.descriptor !is WrappedDeclarationDescriptor<*>)
         deserializeIrSymbol(symbol.signature, symbol.kind())
     }
+
+    open val klib: IrLibrary get() = error("Unsupported operation")
 
     abstract fun addModuleReachableTopLevel(idSig: IdSignature)
 
@@ -177,6 +180,9 @@ class IrModuleDeserializerWithBuiltIns(
     override fun init() {
         delegate.init(this)
     }
+
+    override val klib: IrLibrary
+        get() = delegate.klib
 
     override fun addModuleReachableTopLevel(idSig: IdSignature) {
         delegate.addModuleReachableTopLevel(idSig)

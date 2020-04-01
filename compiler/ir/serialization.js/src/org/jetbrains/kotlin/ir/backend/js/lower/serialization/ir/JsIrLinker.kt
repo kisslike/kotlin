@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.backend.common.serialization.KotlinIrLinker
 import org.jetbrains.kotlin.backend.common.serialization.encodings.BinarySymbolData
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.konan.kotlinLibrary
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.descriptors.IrAbstractFunctionFactory
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
@@ -21,42 +20,22 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.IrExtensionGenerator
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.library.IrLibrary
 import org.jetbrains.kotlin.library.SerializedIrFile
 
 class JsIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable, private val icData: Collection<SerializedIrFile>? = null) :
     KotlinIrLinker(logger, builtIns, symbolTable, emptyList()) {
-
-    override fun reader(moduleDescriptor: ModuleDescriptor, fileIndex: Int, idSigIndex: Int) =
-        moduleDescriptor.kotlinLibrary.irDeclaration(idSigIndex, fileIndex)
-
-    override fun readType(moduleDescriptor: ModuleDescriptor, fileIndex: Int, typeIndex: Int) =
-        moduleDescriptor.kotlinLibrary.type(typeIndex, fileIndex)
-
-    override fun readSignature(moduleDescriptor: ModuleDescriptor, fileIndex: Int, signatureIndex: Int) =
-        moduleDescriptor.kotlinLibrary.signature(signatureIndex, fileIndex)
-
-    override fun readString(moduleDescriptor: ModuleDescriptor, fileIndex: Int, stringIndex: Int) =
-        moduleDescriptor.kotlinLibrary.string(stringIndex, fileIndex)
-
-    override fun readBody(moduleDescriptor: ModuleDescriptor, fileIndex: Int, bodyIndex: Int) =
-        moduleDescriptor.kotlinLibrary.body(bodyIndex, fileIndex)
-
-    override fun readFile(moduleDescriptor: ModuleDescriptor, fileIndex: Int) =
-        moduleDescriptor.kotlinLibrary.file(fileIndex)
-
-    override fun readFileCount(moduleDescriptor: ModuleDescriptor) =
-        moduleDescriptor.kotlinLibrary.fileCount()
 
     override val functionalInteraceFactory: IrAbstractFunctionFactory = IrFunctionFactory(builtIns, symbolTable)
 
     override fun isBuiltInModule(moduleDescriptor: ModuleDescriptor): Boolean =
         moduleDescriptor === moduleDescriptor.builtIns.builtInsModule
 
-    override fun createModuleDeserializer(moduleDescriptor: ModuleDescriptor, strategy: DeserializationStrategy): IrModuleDeserializer =
-        JsModuleDeserializer(moduleDescriptor, strategy)
+    override fun createModuleDeserializer(moduleDescriptor: ModuleDescriptor, klib: IrLibrary?, strategy: DeserializationStrategy): IrModuleDeserializer =
+        JsModuleDeserializer(moduleDescriptor, klib ?: error("Expecting kotlin library"), strategy)
 
-    private inner class JsModuleDeserializer(moduleDescriptor: ModuleDescriptor, strategy: DeserializationStrategy) :
-        KotlinIrLinker.BasicIrModuleDeserializer(moduleDescriptor, strategy)
+    private inner class JsModuleDeserializer(moduleDescriptor: ModuleDescriptor, klib: IrLibrary, strategy: DeserializationStrategy) :
+        KotlinIrLinker.BasicIrModuleDeserializer(moduleDescriptor, klib, strategy)
 
     override fun createCurrentModuleDeserializer(
         moduleFragment: IrModuleFragment,
@@ -117,6 +96,9 @@ class JsIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Symb
 
             TODO("...")
         }
+
+        override val klib: IrLibrary
+            get() = icDeserializer.klib
 
         override val moduleFragment: IrModuleFragment
             get() = delegate.moduleFragment
