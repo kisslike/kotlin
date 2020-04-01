@@ -22,6 +22,7 @@ import com.intellij.psi.PsiTreeChangeEvent
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.core.canDropBraces
 import org.jetbrains.kotlin.idea.core.dropBraces
+import org.jetbrains.kotlin.idea.core.moveInsideParenthesesAndReplaceWith
 import org.jetbrains.kotlin.idea.core.replaced
 import org.jetbrains.kotlin.idea.intentions.ConvertToBlockBodyIntention
 import org.jetbrains.kotlin.psi.*
@@ -42,23 +43,40 @@ internal abstract class ReplacementPerformer<TElement : KtElement>(
     abstract fun doIt(postProcessing: (PsiChildRange) -> PsiChildRange): TElement?
 }
 
-internal class AnnotationEntryReplacementPerformer(
+internal abstract class AbstractSimpleReplacementPerformer<TElement : KtElement>(
     codeToInline: MutableCodeToInline,
-    elementToBeReplaced: KtAnnotationEntry
-) : ReplacementPerformer<KtAnnotationEntry>(codeToInline, elementToBeReplaced) {
+    elementToBeReplaced: TElement
+) : ReplacementPerformer<TElement>(codeToInline, elementToBeReplaced) {
+    protected abstract fun createDummyElement(mainExpression: KtExpression): TElement
 
-    override fun doIt(postProcessing: (PsiChildRange) -> PsiChildRange): KtAnnotationEntry {
-        assert(codeToInline.mainExpression != null)
+    protected open fun rangeToElement(range: PsiChildRange): TElement {
+        assert(range.first == range.last)
+
+        @Suppress("UNCHECKED_CAST")
+        return range.first as TElement
+    }
+
+    final override fun doIt(postProcessing: (PsiChildRange) -> PsiChildRange): TElement {
         assert(codeToInline.statementsBefore.isEmpty())
+        val mainExpression = codeToInline.mainExpression ?: error("mainExpression mustn't be null")
 
-        val dummyAnnotationEntry = createByPattern("@Dummy($0)", codeToInline.mainExpression!!) { psiFactory.createAnnotationEntry(it) }
-        val replaced = elementToBeReplaced.replace(dummyAnnotationEntry)
+        val dummyElement = createDummyElement(mainExpression)
+        val replaced = elementToBeReplaced.replace(dummyElement)
 
         codeToInline.performPostInsertionActions(listOf(replaced))
 
-        var range = PsiChildRange.singleElement(replaced)
-        range = postProcessing(range)
+        return rangeToElement(postProcessing(PsiChildRange.singleElement(replaced)))
+    }
+}
 
+internal class AnnotationEntryReplacementPerformer(
+    codeToInline: MutableCodeToInline,
+    elementToBeReplaced: KtAnnotationEntry
+) : AbstractSimpleReplacementPerformer<KtAnnotationEntry>(codeToInline, elementToBeReplaced) {
+    override fun createDummyElement(mainExpression: KtExpression): KtAnnotationEntry =
+        createByPattern("@Dummy($0)", mainExpression) { psiFactory.createAnnotationEntry(it) }
+
+    override fun rangeToElement(range: PsiChildRange): KtAnnotationEntry {
         assert(range.first == range.last)
         assert(range.first is KtAnnotationEntry)
         val annotationEntry = range.first as KtAnnotationEntry
@@ -67,12 +85,35 @@ internal class AnnotationEntryReplacementPerformer(
     }
 }
 
+internal class SuperTypeCallEntryReplacementPerformer(
+    codeToInline: MutableCodeToInline,
+    elementToBeReplaced: KtSuperTypeCallEntry
+) : AbstractSimpleReplacementPerformer<KtSuperTypeCallEntry>(codeToInline, elementToBeReplaced) {
+    override fun createDummyElement(mainExpression: KtExpression): KtSuperTypeCallEntry {
+        val text = if (mainExpression is KtCallExpression && mainExpression.lambdaArguments.isNotEmpty()) {
+            callWithoutLambdaArguments(mainExpression)
+        } else {
+            mainExpression.text
+        }
+
+        return psiFactory.createSuperTypeCallEntry(text)
+    }
+}
+
+private fun callWithoutLambdaArguments(callExpression: KtCallExpression): String {
+    val copy = callExpression.copy() as KtCallExpression
+    val lambdaArgument = copy.lambdaArguments.first()
+
+    val argumentExpression = lambdaArgument.getArgumentExpression() ?: return callExpression.text
+    return lambdaArgument.moveInsideParenthesesAndReplaceWith(argumentExpression, null, false).text ?: callExpression.text
+}
+
 internal class ExpressionReplacementPerformer(
     codeToInline: MutableCodeToInline,
     expressionToBeReplaced: KtExpression
 ) : ReplacementPerformer<KtExpression>(codeToInline, expressionToBeReplaced) {
 
-    fun KtExpression.replacedWithStringTemplate(templateExpression: KtStringTemplateExpression): KtExpression? {
+    private fun KtExpression.replacedWithStringTemplate(templateExpression: KtStringTemplateExpression): KtExpression? {
         val parent = this.parent
 
         return if (parent is KtStringTemplateEntryWithExpression
