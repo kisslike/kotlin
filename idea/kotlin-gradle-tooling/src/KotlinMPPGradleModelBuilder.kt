@@ -376,7 +376,9 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         }
         val jar = buildTargetJar(gradleTarget, project)
         val testRunTasks = buildTestRunTasks(project, gradleTarget)
-        val nativeMainRunTasks = buildNativeMainRunTasks(project, platform)
+        val nativeMainRunTasks =
+            if (platform == KotlinPlatform.NATIVE) buildNativeMainRunTasks(gradleTarget)
+            else emptyList()
         val artifacts = konanArtifacts(gradleTarget)
         val target = KotlinTargetImpl(
             gradleTarget.name,
@@ -421,19 +423,13 @@ class KotlinMPPGradleModelBuilder : ModelBuilderService {
         )
     }
 
-    private fun buildNativeMainRunTasks(project: Project, platform: KotlinPlatform): Collection<KotlinNativeMainRunTask> {
-        if (platform != KotlinPlatform.NATIVE) return emptyList()
-        val kotlinExtension = project.extensions.findByName("kotlin") ?: return emptyList()
-        val targets =
-            kotlinExtension::class.java.getMethodOrNull("getTargets")?.invoke(kotlinExtension) as? Collection<Any> ?: return emptyList()
-        val executableBinaries =
-            targets.filter { it.javaClass.name.contains("KotlinNativeTarget") }
-                .flatMap { it::class.java.getMethodOrNull("getBinaries")?.invoke(it) as? Collection<Any> ?: emptyList() }
-                .filter { it.javaClass.name == "org.jetbrains.kotlin.gradle.plugin.mpp.Executable" }
+    private fun buildNativeMainRunTasks(gradleTarget: Named): Collection<KotlinNativeMainRunTask> {
+        val executableBinaries = (gradleTarget::class.java.getMethodOrNull("getBinaries")?.invoke(gradleTarget) as? Collection<Any>)
+            ?.filter { it.javaClass.name == "org.jetbrains.kotlin.gradle.plugin.mpp.Executable" } ?: return emptyList()
         return executableBinaries.map { binary ->
-            val compilation = binary.javaClass.getMethodOrNull("getCompilation")?.invoke(binary)
-            val compilationName = compilation?.javaClass?.getMethodOrNull("getCompilationName")?.invoke(compilation)?.toString()
-                ?: KotlinCompilation.MAIN_COMPILATION_NAME
+            val compilationName = binary.javaClass.getMethodOrNull("getCompilation")?.invoke(binary)?.let {
+                it.javaClass.getMethodOrNull("getCompilationName")?.invoke(it)?.toString()
+            } ?: KotlinCompilation.MAIN_COMPILATION_NAME
             KotlinNativeMainRunTaskImpl(
                 binary::class.java.getMethod("getRunTaskName").invoke(binary) as String,
                 compilationName,
