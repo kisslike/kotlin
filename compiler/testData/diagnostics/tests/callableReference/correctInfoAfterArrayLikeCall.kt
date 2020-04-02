@@ -1,7 +1,7 @@
 // !LANGUAGE: +NewInference
 // !DIAGNOSTICS: -UNUSED_PARAMETER
 /*
- * RELEVANT SPEC SENTENCES (spec version: 0.1-220, test type: pos):
+ * SPEC LINKS (spec version: 0.1-220, test type: pos):
  *  - expressions, call-and-property-access-expressions, navigation-operators -> paragraph 9 -> sentence 2
  *  - expressions, call-and-property-access-expressions, navigation-operators -> paragraph 8 -> sentence 1
  */
