@@ -68,7 +68,7 @@ object LinkedSpecTestPatterns : BasePatterns {
     private const val FILENAME_REGEX = """(?<sentenceNumber>$INTEGER_REGEX)\.(?<testNumber>$INTEGER_REGEX)\.kt"""
 
     const val RELEVANT_PLACES = "PRIMARY LINKS"
-    const val ALTERNATIVE_PLACES = "ALTERNATIVE PLACES"
+    const val ALTERNATIVE_PLACES = "SECONDARY LINKS"
 
     override val pathPartRegex =
         """${SpecTestLinkedType.LINKED.testDataPath}$ps$sectionsInPathRegex${ps}p-(?<paragraphNumber>$INTEGER_REGEX)"""

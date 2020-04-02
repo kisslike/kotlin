@@ -99,7 +99,7 @@ object CommonParser {
         parseRelevantAndAlternativePlaces(relevantPlacesMatcher, placeMatcher, relevantAndAlternativePlaces)
 
         val alternativeRelevantPlacesMatcher =
-            testInfoElements[LinkedSpecTestFileInfoElementType.ALTERNATIVE_PLACES]?.additionalMatcher
+            testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher
         parseRelevantAndAlternativePlaces(alternativeRelevantPlacesMatcher, placeMatcher, relevantAndAlternativePlaces)
 
 
