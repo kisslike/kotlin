@@ -67,8 +67,8 @@ object NotLinkedSpecTestPatterns : BasePatterns {
 object LinkedSpecTestPatterns : BasePatterns {
     private const val FILENAME_REGEX = """(?<sentenceNumber>$INTEGER_REGEX)\.(?<testNumber>$INTEGER_REGEX)\.kt"""
 
-    const val RELEVANT_PLACES = "PRIMARY LINKS"
-    const val ALTERNATIVE_PLACES = "SECONDARY LINKS"
+    const val PRIMARY_LINKS = "PRIMARY LINKS"
+    const val SECONDARY_LINKS = "SECONDARY LINKS"
 
     override val pathPartRegex =
         """${SpecTestLinkedType.LINKED.testDataPath}$ps$sectionsInPathRegex${ps}p-(?<paragraphNumber>$INTEGER_REGEX)"""
@@ -77,17 +77,17 @@ object LinkedSpecTestPatterns : BasePatterns {
     override val testInfoPattern: Pattern =
         Pattern.compile(MULTILINE_COMMENT_REGEX.format(""" $ASTERISK_REGEX KOTLIN $testAreaRegex SPEC TEST \($testTypeRegex\)\n(?<infoElements>[\s\S]*?\n)"""))
 
-    val placePattern: Pattern =
+    val mainLinkPattern: Pattern =
         Pattern.compile("""(?<sections>$SECTIONS_IN_FILE_REGEX) -> paragraph (?<paragraphNumber>$INTEGER_REGEX) -> sentence (?<sentenceNumber>$INTEGER_REGEX)""")
 
-    val relevantPlacesPattern: Pattern =
+    val relevantLinksPattern: Pattern =
         Pattern.compile("""(( $ASTERISK_REGEX )?\s*((?<sections>$SECTIONS_IN_FILE_REGEX) -> )?(paragraph (?<paragraphNumber>$INTEGER_REGEX) -> )?sentence (?<sentenceNumber>$INTEGER_REGEX))+""")
 
-    private val relevantPlaceRegex =
+    private val linkRegex =
         Regex("""(( $ASTERISK_REGEX )?\s*($SECTIONS_IN_FILE_REGEX -> )?(paragraph $INTEGER_REGEX -> )?sentence $INTEGER_REGEX)""")
 
-    val relevantPlaces: Pattern = Pattern.compile("""$RELEVANT_PLACES: (?<places>(${relevantPlaceRegex}(\s)*\n)+)""")
-    val alternativePlaces: Pattern = Pattern.compile("""$ALTERNATIVE_PLACES: (?<places>(${relevantPlaceRegex}(\s)*\n)+)""")
+    val primaryLinks: Pattern = Pattern.compile("""$PRIMARY_LINKS: (?<places>(${linkRegex}(\s)*\n)+)""")
+    val secondaryLinks: Pattern = Pattern.compile("""$SECONDARY_LINKS: (?<places>(${linkRegex}(\s)*\n)+)""")
 }
 
 object TestCasePatterns {

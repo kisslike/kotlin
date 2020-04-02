@@ -10,8 +10,8 @@ import org.jetbrains.kotlin.spec.utils.SpecTestCasesSet
 import org.jetbrains.kotlin.spec.utils.SpecTestInfoElementType
 import org.jetbrains.kotlin.spec.utils.TestArea
 import org.jetbrains.kotlin.spec.utils.TestType
-import org.jetbrains.kotlin.spec.utils.parsers.LinkedSpecTestPatterns.placePattern
-import org.jetbrains.kotlin.spec.utils.parsers.LinkedSpecTestPatterns.relevantPlacesPattern
+import org.jetbrains.kotlin.spec.utils.parsers.LinkedSpecTestPatterns.mainLinkPattern
+import org.jetbrains.kotlin.spec.utils.parsers.LinkedSpecTestPatterns.relevantLinksPattern
 import org.jetbrains.kotlin.spec.utils.parsers.CommonParser.withSpaces
 import org.jetbrains.kotlin.spec.utils.parsers.CommonParser.withUnderscores
 import org.jetbrains.kotlin.spec.utils.parsers.CommonParser.splitByPathSeparator
@@ -24,9 +24,9 @@ enum class LinkedSpecTestFileInfoElementType(
     override val required: Boolean = false
 ) : SpecTestInfoElementType {
     SPEC_VERSION(required = true),
-    MAIN_LINK(valuePattern = placePattern, required = true),
-    PRIMARY_LINKS(valuePattern = relevantPlacesPattern),
-    SECONDARY_LINKS(valuePattern = relevantPlacesPattern),
+    MAIN_LINK(valuePattern = mainLinkPattern, required = true),
+    PRIMARY_LINKS(valuePattern = relevantLinksPattern),
+    SECONDARY_LINKS(valuePattern = relevantLinksPattern),
     UNSPECIFIED_BEHAVIOR
 }
 

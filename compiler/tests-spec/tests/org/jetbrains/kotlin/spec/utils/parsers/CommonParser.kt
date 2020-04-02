@@ -156,10 +156,10 @@ object CommonParser {
                 "Unknown '$testInfoOriginalElementName' test info element name."
             )
             val testInfoElementValue: String? = when (testInfoOriginalElementName) {
-                LinkedSpecTestPatterns.RELEVANT_PLACES ->
-                    groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.relevantPlaces, rawElements, testInfoOriginalElementName)
-                LinkedSpecTestPatterns.ALTERNATIVE_PLACES ->
-                    groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.alternativePlaces, rawElements, testInfoOriginalElementName)
+                LinkedSpecTestPatterns.PRIMARY_LINKS ->
+                    groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.primaryLinks, rawElements, testInfoOriginalElementName)
+                LinkedSpecTestPatterns.SECONDARY_LINKS ->
+                    groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.secondaryLinks, rawElements, testInfoOriginalElementName)
                 else ->
                     testInfoElementMatcher.group("value")
             }
