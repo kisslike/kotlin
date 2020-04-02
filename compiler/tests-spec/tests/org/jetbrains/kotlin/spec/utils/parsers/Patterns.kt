@@ -109,8 +109,13 @@ object TestCasePatterns {
 }
 
 object ImplementationTestPatterns {
+    const val SPEC_LINKS = "SPEC LINKS"
+    const val SPEC_VERSION = """spec version: (?<specVersion>\d+\.[0-9]\d*\-[0-9]\d*)"""
+    const val TEST_TYPE = """test type: (?<testType>pos|neg)"""
+    const val TEST_SPEC_SENTENCES = """?<testSpecSentenceList>(\n\s+\*\s+-\s+.*?)"""
+
     val testInfoPattern: Pattern =
-        Pattern.compile(MULTILINE_COMMENT_REGEX.format("""\*\s+SPEC LINKS \(spec version: (?<specVersion>\d+\.[0-9]\d*\-[0-9]\d*), test type: (?<testType>pos|neg)\):(?<testSpecSentenceList>(\n\s+\*\s+-\s+.*?)+)"""))
+        Pattern.compile(MULTILINE_COMMENT_REGEX.format("""\*\s+$SPEC_LINKS \($SPEC_VERSION, $TEST_TYPE\):($TEST_SPEC_SENTENCES+)"""))
     val relevantSpecSentencesPattern: Pattern =
         Pattern.compile("""\n\s+\*\s+-\s+(?<specSections>.*?) -> paragraph (?<specParagraph>[1-9]\d*) -> sentence (?<specSentence>[1-9]\d*)""")
 }
