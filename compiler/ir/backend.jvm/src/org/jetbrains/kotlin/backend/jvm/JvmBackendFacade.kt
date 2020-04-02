@@ -66,9 +66,9 @@ object JvmBackendFacade {
         val irProviders = listOf(irLinker, stubGenerator)
 
         stubGenerator.setIrProviders(irProviders)
-        irLinker.init(psi2irGenerator.moduleFragment, pluginExtensions)
+//        irLinker.init(psi2irGenerator.moduleFragment, pluginExtensions)
 
-        val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, irProviders, expectDescriptorToSymbol = null)
+        val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, irProviders, expectDescriptorToSymbol = null, pluginExtensions)
         irLinker.postProcess()
         // We need to compile all files we reference in Klibs
         irModuleFragment.files.addAll(dependencies.flatMap { it.files })

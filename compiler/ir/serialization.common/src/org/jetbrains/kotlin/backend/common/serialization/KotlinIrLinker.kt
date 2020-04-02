@@ -57,7 +57,7 @@ abstract class KotlinIrLinker(
 
     protected val deserializersForModules = mutableMapOf<ModuleDescriptor, IrModuleDeserializer>()
 
-    abstract inner class BasicIrModuleDeserializer(moduleDescriptor: ModuleDescriptor, override val klib: IrLibrary, private val strategy: DeserializationStrategy) :
+    abstract inner class BasicIrModuleDeserializer(moduleDescriptor: ModuleDescriptor, override val klib: IrLibrary, override val strategy: DeserializationStrategy) :
         IrModuleDeserializer(moduleDescriptor) {
 
         private val fileToDeserializerMap = mutableMapOf<IrFile, IrDeserializerForFile>()
@@ -110,6 +110,7 @@ abstract class KotlinIrLinker(
             fileToDeserializerMap.values.forEach { it.deserializeExpectActualMapping() }
         }
 
+        // TODO: fix to topLevel checker
         override fun contains(idSig: IdSignature): Boolean = idSig in moduleReversedFileIndex
 
         override fun deserializeIrSymbol(idSig: IdSignature, symbolKind: BinarySymbolData.SymbolKind): IrSymbol {

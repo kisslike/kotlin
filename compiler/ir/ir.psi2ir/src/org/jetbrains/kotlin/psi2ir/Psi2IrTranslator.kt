@@ -72,7 +72,8 @@ class Psi2IrTranslator(
         moduleGenerator: ModuleGenerator,
         ktFiles: Collection<KtFile>,
         irProviders: List<IrProvider>,
-        expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null
+        expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null,
+        pluginExtensions: Collection<IrExtensionGenerator> = emptyList()
     ): IrModuleFragment {
         val context = moduleGenerator.context
         val irModule = moduleGenerator.generateModuleFragmentWithoutDependencies(ktFiles)
@@ -80,6 +81,9 @@ class Psi2IrTranslator(
         irModule.patchDeclarationParents()
         expectDescriptorToSymbol?.let { referenceExpectsForUsedActuals(it, context.symbolTable, irModule) }
         postprocess(context, irModule)
+
+        irProviders.filterIsInstance<IrDeserializer>().forEach { it.init(irModule, pluginExtensions) }
+
         // do not generate unbound symbols before postprocessing,
         // since plugins must work with non-lazy IR
         moduleGenerator.generateUnboundSymbolsAsDependencies(irProviders)

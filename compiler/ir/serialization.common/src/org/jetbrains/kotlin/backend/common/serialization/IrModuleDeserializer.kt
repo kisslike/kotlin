@@ -58,6 +58,8 @@ abstract class IrModuleDeserializer(val moduleDescriptor: ModuleDescriptor) {
     abstract val moduleFragment: IrModuleFragment
 
     abstract val moduleDependencies: Collection<IrModuleDeserializer>
+
+    open val strategy: DeserializationStrategy = DeserializationStrategy.ONLY_DECLARATION_HEADERS
 }
 
 // Used to resolve built in symbols like `kotlin.ir.internal.*` or `kotlin.FunctionN`
@@ -183,6 +185,9 @@ class IrModuleDeserializerWithBuiltIns(
 
     override val klib: IrLibrary
         get() = delegate.klib
+
+    override val strategy: DeserializationStrategy
+        get() = delegate.strategy
 
     override fun addModuleReachableTopLevel(idSig: IdSignature) {
         delegate.addModuleReachableTopLevel(idSig)

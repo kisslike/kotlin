@@ -101,6 +101,7 @@ fun generateKLib(
     val incrementalDataProvider = configuration.get(JSConfigurationKeys.INCREMENTAL_DATA_PROVIDER)
 
     val icData: List<KotlinFileSerializedData>
+    val serializedIrFiles: List<SerializedIrFile>?
 
     if (incrementalDataProvider != null) {
         val nonCompiledSources = files.map { VfsUtilCore.virtualToIoFile(it.virtualFile) to it }.toMap()
@@ -123,8 +124,10 @@ fun generateKLib(
         }
 
         icData = storage
+        serializedIrFiles = storage.map { it.irData }
     } else {
         icData = emptyList()
+        serializedIrFiles = null
     }
 
     val depsDescriptors =
@@ -134,7 +137,7 @@ fun generateKLib(
 
     val expectDescriptorToSymbol = mutableMapOf<DeclarationDescriptor, IrSymbol>()
 
-    val irLinker = JsIrLinker(emptyLoggingContext, psi2IrContext.irBuiltIns, psi2IrContext.symbolTable)
+    val irLinker = JsIrLinker(emptyLoggingContext, psi2IrContext.irBuiltIns, psi2IrContext.symbolTable, serializedIrFiles)
 
     val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
         irLinker.deserializeOnlyHeaderModule(depsDescriptors.getModuleDescriptor(it), it)
@@ -197,7 +200,7 @@ fun loadIr(
             val irBuiltIns = psi2IrContext.irBuiltIns
             val symbolTable = psi2IrContext.symbolTable
 
-            val irLinker = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable)
+            val irLinker = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable, null)
 
             val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
                 irLinker.deserializeIrModuleHeader(depsDescriptors.getModuleDescriptor(it), it)
@@ -226,7 +229,7 @@ fun loadIr(
             typeTranslator.constantValueGenerator = constantValueGenerator
             constantValueGenerator.typeTranslator = typeTranslator
             val irBuiltIns = IrBuiltIns(moduleDescriptor.builtIns, typeTranslator, signaturer, symbolTable)
-            val irLinker = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable)
+            val irLinker = JsIrLinker(emptyLoggingContext, irBuiltIns, symbolTable, null)
 
             val deserializedModuleFragments = sortDependencies(allDependencies.getFullList(), depsDescriptors.descriptors).map {
                 val strategy =
@@ -293,8 +296,8 @@ fun GeneratorContext.generateModuleFragmentWithPlugins(
         }
     }
 
-    irLinker.init(psi2irModuleGenerator.moduleFragment, extensions)
-    return psi2Ir.generateModuleFragment(psi2irModuleGenerator, files, listOf(irLinker), expectDescriptorToSymbol)
+//    irLinker.init(psi2irModuleGenerator.moduleFragment, extensions)
+    return psi2Ir.generateModuleFragment(psi2irModuleGenerator, files, listOf(irLinker), expectDescriptorToSymbol, extensions)
 }
 
 private fun createBuiltIns(storageManager: StorageManager) = object : KotlinBuiltIns(storageManager) {}
