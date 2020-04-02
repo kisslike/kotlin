@@ -84,8 +84,6 @@ class Psi2IrTranslator(
 
         irProviders.filterIsInstance<IrDeserializer>().forEach { it.init(irModule, pluginExtensions) }
 
-        // do not generate unbound symbols before postprocessing,
-        // since plugins must work with non-lazy IR
         moduleGenerator.generateUnboundSymbolsAsDependencies(irProviders)
 
         postprocessingSteps.forEach { it.invoke(irModule) }
