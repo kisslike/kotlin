@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-222
  * PLACE: statements, assignments, operator-assignments -> paragraph 2 -> sentence 13
- * RELEVANT PLACES: statements, assignments, operator-assignments -> paragraph 2 -> sentence 14
+ * PRIMARY LINKS: statements, assignments, operator-assignments -> paragraph 2 -> sentence 14
  * NUMBER: 1
  * DESCRIPTION: A %= B is exactly the same as A.remAssign(B) or A = A.rem(B) (applied in order)
  * EXCEPTION: compiletime

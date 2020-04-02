@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, equality-expressions, value-equality-expressions -> paragraph 2 -> sentence 1
- * RELEVANT PLACES: expressions, equality-expressions, value-equality-expressions -> paragraph 3 -> sentence 1
+ * PRIMARY LINKS: expressions, equality-expressions, value-equality-expressions -> paragraph 3 -> sentence 1
  * NUMBER: 4
  * DESCRIPTION: check value-equality-expression
  */

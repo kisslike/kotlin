@@ -67,7 +67,7 @@ object NotLinkedSpecTestPatterns : BasePatterns {
 object LinkedSpecTestPatterns : BasePatterns {
     private const val FILENAME_REGEX = """(?<sentenceNumber>$INTEGER_REGEX)\.(?<testNumber>$INTEGER_REGEX)\.kt"""
 
-    const val RELEVANT_PLACES = "RELEVANT PLACES"
+    const val RELEVANT_PLACES = "PRIMARY LINKS"
     const val ALTERNATIVE_PLACES = "ALTERNATIVE PLACES"
 
     override val pathPartRegex =

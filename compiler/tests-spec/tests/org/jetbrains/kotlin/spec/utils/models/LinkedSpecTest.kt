@@ -25,7 +25,7 @@ enum class LinkedSpecTestFileInfoElementType(
 ) : SpecTestInfoElementType {
     SPEC_VERSION(required = true),
     PLACE(valuePattern = placePattern, required = true),
-    RELEVANT_PLACES(valuePattern = relevantPlacesPattern),
+    PRIMARY_LINKS(valuePattern = relevantPlacesPattern),
     ALTERNATIVE_PLACES(valuePattern = relevantPlacesPattern),
     UNSPECIFIED_BEHAVIOR
 }

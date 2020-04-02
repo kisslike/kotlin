@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, type-checking-and-containment-checking-expressions, containment-checking-expression -> paragraph 4 -> sentence 1
- * RELEVANT PLACES: expressions, type-checking-and-containment-checking-expressions, containment-checking-expression -> paragraph 1 -> sentence 2
+ * PRIMARY LINKS: expressions, type-checking-and-containment-checking-expressions, containment-checking-expression -> paragraph 1 -> sentence 2
  * expressions, type-checking-and-containment-checking-expressions, containment-checking-expression -> paragraph 1 -> sentence 1
  * expressions, type-checking-and-containment-checking-expressions, containment-checking-expression -> paragraph 3 -> sentence 1
  * NUMBER: 1

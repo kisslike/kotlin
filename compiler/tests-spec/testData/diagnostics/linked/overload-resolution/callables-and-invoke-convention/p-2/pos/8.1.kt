@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-268
  * PLACE: overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 8
- * RELEVANT PLACES: overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 9
+ * PRIMARY LINKS: overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 9
  * overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 10
  * NUMBER: 1
  * DESCRIPTION: A companion object of a classifier type named foo at its declaration site

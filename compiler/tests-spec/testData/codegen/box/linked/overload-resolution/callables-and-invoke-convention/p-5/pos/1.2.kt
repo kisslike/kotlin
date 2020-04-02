@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-268
  * PLACE: overload-resolution, callables-and-invoke-convention -> paragraph 5 -> sentence 1
- * RELEVANT PLACES: overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 6
+ * PRIMARY LINKS: overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 6
  * overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 3
  * NUMBER: 2
  * DESCRIPTION: function-like prio is higher than property-like callables

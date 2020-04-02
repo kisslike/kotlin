@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-253
  * PLACE: statements, assignments, operator-assignments -> paragraph 2 -> sentence 4
- * RELEVANT PLACES: statements, assignments, operator-assignments -> paragraph 2 -> sentence 5
+ * PRIMARY LINKS: statements, assignments, operator-assignments -> paragraph 2 -> sentence 5
  * NUMBER: 1
  * DESCRIPTION: A -= B is exactly the same as A.minusAssign(B) or A = A.minus(B) (applied in order)
  */

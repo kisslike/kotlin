@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-280
  * PLACE: overload-resolution, building-the-overload-candidate-set-ocs, call-with-named-parameters -> paragraph 1 -> sentence 2
- * RELEVANT PLACES: overload-resolution, building-the-overload-candidate-set-ocs, call-with-named-parameters -> paragraph 2 -> sentence 1
+ * PRIMARY LINKS: overload-resolution, building-the-overload-candidate-set-ocs, call-with-named-parameters -> paragraph 2 -> sentence 1
  * NUMBER: 2
  * DESCRIPTION: Implicit receiver: sets of local, explicitly imported, declared in the package scope and star-imported extension callables
  */

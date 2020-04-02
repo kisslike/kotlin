@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, elvis-operator-expression -> paragraph 1 -> sentence 2
- * RELEVANT PLACES: expressions, elvis-operator-expression -> paragraph 1 -> sentence 1
+ * PRIMARY LINKS: expressions, elvis-operator-expression -> paragraph 1 -> sentence 1
  * expressions, elvis-operator-expression -> paragraph 2 -> sentence 1
  * NUMBER: 1
  * DESCRIPTION: Check Elvis evaluation

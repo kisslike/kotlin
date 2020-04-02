@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, try-expression -> paragraph 2 -> sentence 2
- * RELEVANT PLACES: expressions, try-expression -> paragraph 2 -> sentence 1
+ * PRIMARY LINKS: expressions, try-expression -> paragraph 2 -> sentence 1
  * NUMBER: 2
  * DESCRIPTION: catch block is evaluated immediately after the exception is thrown and the exception itself is passed inside the catch block as the corresponding parameter.
  */

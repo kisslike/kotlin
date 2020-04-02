@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-222
  * PLACE: expressions, jump-expressions, break-expression -> paragraph 3 -> sentence 2
- * RELEVANT PLACES: expressions, jump-expressions, break-expression -> paragraph 1 -> sentence 1
+ * PRIMARY LINKS: expressions, jump-expressions, break-expression -> paragraph 1 -> sentence 1
  * expressions, jump-expressions, break-expression -> paragraph 1 -> sentence 2
  * expressions, jump-expressions, break-expression -> paragraph 2 -> sentence 1
  * NUMBER: 1

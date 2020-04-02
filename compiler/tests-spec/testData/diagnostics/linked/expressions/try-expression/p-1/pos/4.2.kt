@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, try-expression -> paragraph 1 -> sentence 4
- * RELEVANT PLACES: expressions, try-expression -> paragraph 1 -> sentence 2
+ * PRIMARY LINKS: expressions, try-expression -> paragraph 1 -> sentence 2
  * NUMBER: 2
  * DESCRIPTION: finally is a soft keyword
  */

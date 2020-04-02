@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, try-expression -> paragraph 1 -> sentence 5
- * RELEVANT PLACES: expressions, try-expression -> paragraph 1 -> sentence 2
+ * PRIMARY LINKS: expressions, try-expression -> paragraph 1 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: A valid try-expression must have at least one catch or finally block.
  */

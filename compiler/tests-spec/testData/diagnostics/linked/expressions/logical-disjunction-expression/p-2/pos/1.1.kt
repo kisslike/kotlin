@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-313
  * PLACE: expressions, logical-disjunction-expression -> paragraph 2 -> sentence 1
- * RELEVANT PLACES: expressions, logical-disjunction-expression -> paragraph 2 -> sentence 2
+ * PRIMARY LINKS: expressions, logical-disjunction-expression -> paragraph 2 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION:Both operands of a logical disjunction expression must have a type which is a subtype of kotlin.Boolean
  * HELPERS: checkType

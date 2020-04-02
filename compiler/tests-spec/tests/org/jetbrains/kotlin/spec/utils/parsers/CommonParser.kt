@@ -95,7 +95,7 @@ object CommonParser {
         val parsedTestFile = tryParseTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)
         val testInfoElements = parsedTestFile.testInfoElements
         val placeMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.PLACE]!!.additionalMatcher!!
-        val relevantPlacesMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.RELEVANT_PLACES]?.additionalMatcher
+        val relevantPlacesMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher
         parseRelevantAndAlternativePlaces(relevantPlacesMatcher, placeMatcher, relevantAndAlternativePlaces)
 
         val alternativeRelevantPlacesMatcher =

@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-278
  * PLACE: overload-resolution, receivers -> paragraph 5 -> sentence 3
- * RELEVANT PLACES: overload-resolution, receivers -> paragraph 5 -> sentence 1
+ * PRIMARY LINKS: overload-resolution, receivers -> paragraph 5 -> sentence 1
  * overload-resolution, building-the-overload-candidate-set-ocs, call-without-an-explicit-receiver -> paragraph 5 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: The phantom static implicit this receiver has higher priority than the current class companion object receiver

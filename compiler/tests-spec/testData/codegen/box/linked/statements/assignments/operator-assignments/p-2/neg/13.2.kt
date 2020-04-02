@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-222
  * PLACE: statements, assignments, operator-assignments -> paragraph 2 -> sentence 13
- * RELEVANT PLACES: statements, assignments, operator-assignments -> paragraph 2 -> sentence 14
+ * PRIMARY LINKS: statements, assignments, operator-assignments -> paragraph 2 -> sentence 14
  * statements, assignments, operator-assignments -> paragraph 2 -> sentence 15
  * statements, assignments, operator-assignments -> paragraph 3 -> sentence 1
  * NUMBER: 2

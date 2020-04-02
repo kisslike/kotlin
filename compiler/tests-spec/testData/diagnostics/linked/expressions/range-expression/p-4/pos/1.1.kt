@@ -7,7 +7,7 @@
  *
  * SPEC VERSION: 0.1-218
  * PLACE: expressions, range-expression -> paragraph 4 -> sentence 1
- * RELEVANT PLACES: expressions, range-expression -> paragraph 4 -> sentence 2
+ * PRIMARY LINKS: expressions, range-expression -> paragraph 4 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: The return type of range operator is not restricted.
  * HELPERS: checkType

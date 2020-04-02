@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-213
  * PLACE: expressions, postfix-operator-expressions, postfix-decrement-expression -> paragraph 4 -> sentence 1
- * RELEVANT PLACES: statements, assignments -> paragraph 3 -> sentence 2
+ * PRIMARY LINKS: statements, assignments -> paragraph 3 -> sentence 2
  * NUMBER: 2
  * DESCRIPTION: check for A-- expression A must be an assignable expression (a navigation expression referring to a mutable property)
  */

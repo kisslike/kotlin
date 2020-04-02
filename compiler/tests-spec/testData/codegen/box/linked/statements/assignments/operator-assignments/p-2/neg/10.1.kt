@@ -5,7 +5,7 @@
  *
  * SPEC VERSION: 0.1-222
  * PLACE: statements, assignments, operator-assignments -> paragraph 2 -> sentence 10
- * RELEVANT PLACES: statements, assignments, operator-assignments -> paragraph 2 -> sentence 11
+ * PRIMARY LINKS: statements, assignments, operator-assignments -> paragraph 2 -> sentence 11
  * NUMBER: 1
  * DESCRIPTION: A /= B is exactly the same as A.divAssign(B) or A = A.div(B) (applied in order)
  * EXCEPTION: compiletime
