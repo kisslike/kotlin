@@ -54,17 +54,25 @@ object CommonParser {
             ?: throw SpecTestValidationException(SpecTestValidationFailedReason.TESTINFO_NOT_VALID)
         val specVersion = matcher.group("specVersion")
         val testSpecSentenceList = matcher.group("testSpecSentenceList")
-        val specSentenceListMatcher = ImplementationTestPatterns.relevantSpecSentencesPattern.matcher(testSpecSentenceList)
+        val primarySpecSentenceListMatcher = LinkedSpecTestPatterns.primaryLinks.matcher(testSpecSentenceList)
+        val secondarySpecSentenceListMatcher = ImplementationTestPatterns.relevantSpecSentencesPattern.matcher(testSpecSentenceList)
         val specPlaces = mutableListOf<SpecPlace>()
 
-        while (specSentenceListMatcher.find()) {
-            specPlaces.add(
-                SpecPlace(
-                    sections = specSentenceListMatcher.group("specSections").split(Regex(""",\s*""")),
-                    paragraphNumber = specSentenceListMatcher.group("specParagraph").toInt(),
-                    sentenceNumber = specSentenceListMatcher.group("specSentence").toInt()
+
+        while (primarySpecSentenceListMatcher.find()) {
+            val x = primarySpecSentenceListMatcher.group("places")
+
+            val matcher = LinkedSpecTestPatterns.relevantLinksPattern.matcher(x)
+
+            while (matcher.find()){
+                specPlaces.add(
+                    SpecPlace(
+                        sections = matcher.group("sections").split(Regex(""",\s*""")),
+                        paragraphNumber = matcher.group("paragraphNumber").toInt(),
+                        sentenceNumber = matcher.group("sentenceNumber").toInt()
+                    )
                 )
-            )
+            }
         }
 
         return LinkedSpecTest.getInstanceForImplementationTest(specVersion, testArea, testType, specPlaces, file.nameWithoutExtension)
