@@ -1,7 +1,8 @@
 /*
  * SPEC LINKS (spec version: 0.1-152, test type: pos):
- *  - expressions, when-expression -> paragraph 5 -> sentence 1
- *  - expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 9
+ * PRIMARY LINKS: expressions, when-expression -> paragraph 5 -> sentence 1
+ * expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 9
+ * expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 923
  */
 
 // See KT-6399: exhaustive whens on platform enums

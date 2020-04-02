@@ -1,7 +1,7 @@
 /*
  * SPEC LINKS (spec version: 0.1-313, test type: pos):
- *  - expressions, when-expression -> paragraph 2 -> sentence 1
- *  - expressions, when-expression -> paragraph 5 -> sentence 1
+ * PRIMARY LINKS: expressions, when-expression -> paragraph 2 -> sentence 1
+ * expressions, when-expression -> paragraph 5 -> sentence 1
  */
 fun foo(x: Int, y: Int): Int =
         when {

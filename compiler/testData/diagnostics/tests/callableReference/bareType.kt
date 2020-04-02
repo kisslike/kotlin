@@ -1,6 +1,6 @@
 /*
  * SPEC LINKS (spec version: 0.1-220, test type: pos):
- *  - expressions, call-and-property-access-expressions, callable-references -> paragraph 3 -> sentence 1
+ * PRIMARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 3 -> sentence 1
  */
 fun f1() = <!WRONG_NUMBER_OF_TYPE_ARGUMENTS!>Map<!>::hashCode
 fun f2() = <!WRONG_NUMBER_OF_TYPE_ARGUMENTS!>Map.Entry<!>::hashCode

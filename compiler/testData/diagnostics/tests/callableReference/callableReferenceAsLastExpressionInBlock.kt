@@ -2,7 +2,7 @@
 // !CHECK_TYPE
 /*
  * SPEC LINKS (spec version: 0.1-220, test type: pos):
- *  - expressions, call-and-property-access-expressions, callable-references -> paragraph 11 -> sentence 3
+ * PRIMARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 11 -> sentence 3
  */
 
 import kotlin.reflect.KFunction0

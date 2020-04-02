@@ -1,9 +1,9 @@
 /*
  * SPEC LINKS (spec version: 0.1-313, test type: neg):
- *  - expressions, when-expression -> paragraph 5 -> sentence 1
- *  - expressions, when-expression -> paragraph 6 -> sentence 1
- *  - expressions, when-expression -> paragraph 6 -> sentence 5
- *  - expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 9
+ * PRIMARY LINKS: expressions, when-expression -> paragraph 5 -> sentence 1
+ * expressions, when-expression -> paragraph 6 -> sentence 1
+ * expressions, when-expression -> paragraph 6 -> sentence 5
+ * expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 9
  */
 
 enum class MyEnum {

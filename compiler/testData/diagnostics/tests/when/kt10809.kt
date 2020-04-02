@@ -3,17 +3,17 @@
 // NI_EXPECTED_FILE
 /*
  * SPEC LINKS (spec version: 0.1-152, test type: pos):
- *  - expressions, when-expression -> paragraph 5 -> sentence 1
- *  - expressions, when-expression -> paragraph 6 -> sentence 1
- *  - expressions, when-expression -> paragraph 2 -> sentence 1
- *  - expressions, when-expression -> paragraph 9 -> sentence 1
- *  - expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 1
- *  - expressions, conditional-expression -> paragraph 4 -> sentence 1
- *  - declarations, function-declaration -> paragraph 7 -> sentence 1
- *  - type-inference, smart-casts, smart-cast-types -> paragraph 9 -> sentence 1
- *  - type-system, type-kinds, type-parameters -> paragraph 4 -> sentence 1
- *  - type-inference, local-type-inference -> paragraph 8 -> sentence 1
- *  - type-inference, local-type-inference -> paragraph 2 -> sentence 1
+ * PRIMARY LINKS: expressions, when-expression -> paragraph 5 -> sentence 1
+ * expressions, when-expression -> paragraph 6 -> sentence 1
+ * expressions, when-expression -> paragraph 2 -> sentence 1
+ * expressions, when-expression -> paragraph 9 -> sentence 1
+ * expressions, when-expression, exhaustive-when-expressions -> paragraph 2 -> sentence 1
+ * expressions, conditional-expression -> paragraph 4 -> sentence 1
+ * declarations, function-declaration -> paragraph 7 -> sentence 1
+ * type-inference, smart-casts, smart-cast-types -> paragraph 9 -> sentence 1
+ * type-system, type-kinds, type-parameters -> paragraph 4 -> sentence 1
+ * type-inference, local-type-inference -> paragraph 8 -> sentence 1
+ * type-inference, local-type-inference -> paragraph 2 -> sentence 1
  */
 
 interface Data
