@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-213
- * PLACE: expressions, postfix-operator-expressions, postfix-decrement-expression -> paragraph 4 -> sentence 1
+ * MAIN LINK: expressions, postfix-operator-expressions, postfix-decrement-expression -> paragraph 4 -> sentence 1
  * PRIMARY LINKS: statements, assignments -> paragraph 3 -> sentence 2
  * NUMBER: 2
  * DESCRIPTION: check for A-- expression A must be an assignable expression (a navigation expression referring to a mutable property)

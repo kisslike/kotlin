@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-268
- * PLACE: overload-resolution, callables-and-invoke-convention -> paragraph 5 -> sentence 1
+ * MAIN LINK: overload-resolution, callables-and-invoke-convention -> paragraph 5 -> sentence 1
  * PRIMARY LINKS: overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 2
  * overload-resolution, callables-and-invoke-convention -> paragraph 2 -> sentence 8
  * NUMBER: 8

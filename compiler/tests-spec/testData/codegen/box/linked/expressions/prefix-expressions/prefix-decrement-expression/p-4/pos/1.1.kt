@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-213
- * PLACE: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 4 -> sentence 1
+ * MAIN LINK: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 4 -> sentence 1
  * PRIMARY LINKS: statements, assignments -> paragraph 3 -> sentence 3
  * NUMBER: 1
  * DESCRIPTION: check for a prefix increment expression --A expression A must be an assignable expression (an indexing expression)

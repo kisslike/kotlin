@@ -6,7 +6,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-278
- * PLACE: overload-resolution, receivers -> paragraph 5 -> sentence 3
+ * MAIN LINK: overload-resolution, receivers -> paragraph 5 -> sentence 3
  * PRIMARY LINKS: overload-resolution, receivers -> paragraph 5 -> sentence 1
  * overload-resolution, building-the-overload-candidate-set-ocs, call-without-an-explicit-receiver -> paragraph 5 -> sentence 2
  * NUMBER: 1

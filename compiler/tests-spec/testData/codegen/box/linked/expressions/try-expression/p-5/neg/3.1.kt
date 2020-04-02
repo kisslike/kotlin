@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-218
- * PLACE: expressions, try-expression -> paragraph 5 -> sentence 3
+ * MAIN LINK: expressions, try-expression -> paragraph 5 -> sentence 3
  * PRIMARY LINKS: expressions, try-expression -> paragraph 4 -> sentence 1
  * exceptions, catching-exceptions -> paragraph 4 -> sentence 1
  * NUMBER: 1

@@ -6,7 +6,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-218
- * PLACE: expressions, additive-expression -> paragraph 4 -> sentence 1
+ * MAIN LINK: expressions, additive-expression -> paragraph 4 -> sentence 1
  * PRIMARY LINKS: expressions, additive-expression -> paragraph 4 -> sentence 2
  * overloadable-operators -> paragraph 4 -> sentence 1
  * NUMBER: 1

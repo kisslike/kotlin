@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-278
- * PLACE: overload-resolution, receivers -> paragraph 5 -> sentence 5
+ * MAIN LINK: overload-resolution, receivers -> paragraph 5 -> sentence 5
  * PRIMARY LINKS: overload-resolution, receivers -> paragraph 5 -> sentence 4
  * NUMBER: 1
  * DESCRIPTION: Superclass companion object receivers are prioritized according to the inheritance order

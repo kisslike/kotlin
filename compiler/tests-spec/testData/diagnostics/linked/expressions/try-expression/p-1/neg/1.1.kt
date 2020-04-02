@@ -6,7 +6,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-218
- * PLACE:expressions, try-expression -> paragraph 1 -> sentence 1
+ * MAIN LINK:expressions, try-expression -> paragraph 1 -> sentence 1
  * PRIMARY LINKS: expressions, try-expression -> paragraph 1 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: try-expression has to start with a try body

@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-222
- * PLACE: statements, assignments, operator-assignments -> paragraph 2 -> sentence 1
+ * MAIN LINK: statements, assignments, operator-assignments -> paragraph 2 -> sentence 1
  * PRIMARY LINKS: statements, assignments, operator-assignments -> paragraph 2 -> sentence 2
  * statements, assignments, operator-assignments -> paragraph 2 -> sentence 3
  * statements, assignments, operator-assignments -> paragraph 3 -> sentence 1

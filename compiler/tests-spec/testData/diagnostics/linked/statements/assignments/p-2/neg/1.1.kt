@@ -6,7 +6,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-222
- * PLACE: statements, assignments -> paragraph 2 -> sentence 1
+ * MAIN LINK: statements, assignments -> paragraph 2 -> sentence 1
  * PRIMARY LINKS: statements, assignments -> paragraph 3 -> sentence 1
  * statements, assignments, simple-assignments -> paragraph 1 -> sentence 2
  * NUMBER: 1

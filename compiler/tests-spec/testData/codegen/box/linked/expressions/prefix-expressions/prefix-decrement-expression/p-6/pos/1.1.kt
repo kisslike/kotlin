@@ -4,7 +4,7 @@
  * KOTLIN CODEGEN BOX SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-213
- * PLACE: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 6 -> sentence 1
+ * MAIN LINK: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 6 -> sentence 1
  * PRIMARY LINKS: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 5 -> sentence 1
  * overloadable-operators -> paragraph 4 -> sentence 1
  * statements, assignments -> paragraph 3 -> sentence 1

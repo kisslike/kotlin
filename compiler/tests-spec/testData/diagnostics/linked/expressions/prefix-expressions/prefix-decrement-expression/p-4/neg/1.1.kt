@@ -6,7 +6,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-213
- * PLACE: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 4 -> sentence 1
+ * MAIN LINK: expressions, prefix-expressions, prefix-decrement-expression -> paragraph 4 -> sentence 1
  * PRIMARY LINKS: statements, assignments -> paragraph 3 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: check unsafe prefix decrement expression call for an assignable expression

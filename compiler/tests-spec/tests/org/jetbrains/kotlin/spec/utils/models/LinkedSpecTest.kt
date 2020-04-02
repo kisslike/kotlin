@@ -24,7 +24,7 @@ enum class LinkedSpecTestFileInfoElementType(
     override val required: Boolean = false
 ) : SpecTestInfoElementType {
     SPEC_VERSION(required = true),
-    PLACE(valuePattern = placePattern, required = true),
+    MAIN_LINK(valuePattern = placePattern, required = true),
     PRIMARY_LINKS(valuePattern = relevantPlacesPattern),
     ALTERNATIVE_PLACES(valuePattern = relevantPlacesPattern),
     UNSPECIFIED_BEHAVIOR
