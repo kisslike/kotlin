@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.library.IrLibrary
 import org.jetbrains.kotlin.load.java.descriptors.*
 import org.jetbrains.kotlin.name.Name
 
-class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable, private val stubGenerator: DeclarationStubGenerator) :
+class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: SymbolTable, private val stubGenerator: DeclarationStubGenerator, private val manglerDesc: JvmManglerDesc) :
     KotlinIrLinker(logger, builtIns, symbolTable, emptyList()) {
 
     override val functionalInteraceFactory: IrAbstractFunctionFactory = IrFunctionFactory(builtIns, symbolTable)
@@ -82,7 +82,7 @@ class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Sym
         IrModuleDeserializer(moduleDescriptor) {
         override fun contains(idSig: IdSignature): Boolean = true
 
-        private val descriptorFinder = DescriptorByIdSignatureFinder(moduleDescriptor, JvmManglerDesc(null /* TODO: could main be referenced here? */))
+        private val descriptorFinder = DescriptorByIdSignatureFinder(moduleDescriptor, manglerDesc)
 
         private fun resolveDescriptor(idSig: IdSignature): DeclarationDescriptor {
             return descriptorFinder.findDescriptorBySignature(idSig) ?: error("No descriptor found for $idSig")
