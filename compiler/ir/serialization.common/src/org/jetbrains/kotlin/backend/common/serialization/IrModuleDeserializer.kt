@@ -206,16 +206,11 @@ open class CurrentModuleDeserializer(
     override fun contains(idSig: IdSignature): Boolean = false // TODO:
 
     override fun deserializeIrSymbol(idSig: IdSignature, symbolKind: BinarySymbolData.SymbolKind): IrSymbol {
-        assert(contains(idSig))
-        TODO("Not yet implemented")
+        error("Unreachable execution: there could not be back-links")
     }
 
     override fun declareIrSymbol(symbol: IrSymbol) {
-//        return super.declareIrSymbol(symbol)
-//        if ()
-//        val descriptor = symbol.descriptor
         declareIrSymbolImpl(symbol)
-
     }
 
     private fun referenceParentDescriptor(descriptor: DeclarationDescriptor): IrSymbol {
