@@ -16,6 +16,7 @@ import com.intellij.openapi.diagnostic.ControlFlowException
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.fileTypes.FileTypeManager
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.ex.PathUtilEx
@@ -66,7 +67,7 @@ class ScriptDefinitionsManager(private val project: Project) : LazyScriptDefinit
     private val scriptDefinitionsCache = SLRUMap<String, ScriptDefinition>(10, 10)
 
     init {
-        executeOnPooledThread {
+        runBackgroundableTask("Kotlin: updating script definitions", project, false) {
             reloadScriptDefinitions()
         }
     }
