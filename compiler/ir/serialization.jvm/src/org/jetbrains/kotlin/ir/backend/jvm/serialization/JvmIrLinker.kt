@@ -50,6 +50,11 @@ class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Sym
         return this is JavaClassDescriptor || this is JavaCallableMemberDescriptor || (containingDeclaration?.isJavaDescriptor() == true)
     }
 
+    private fun DeclarationDescriptor.isCleanDescriptor(): Boolean {
+        if (this is PropertyAccessorDescriptor) return correspondingProperty.isCleanDescriptor()
+        return this is DeserializedDescriptor
+    }
+
     override fun createCurrentModuleDeserializer(moduleFragment: IrModuleFragment, dependencies: Collection<IrModuleDeserializer>, extensions: Collection<IrExtensionGenerator>): IrModuleDeserializer =
         JvmCurrentModuleDeserializer(moduleFragment, dependencies, extensions)
 
@@ -60,6 +65,11 @@ class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Sym
 
             if (descriptor.isJavaDescriptor()) {
                 // Wrap java declaration with lazy ir
+                stubGenerator.generateMemberStub(descriptor)
+                return
+            }
+
+            if (descriptor.isCleanDescriptor()) {
                 stubGenerator.generateMemberStub(descriptor)
                 return
             }
