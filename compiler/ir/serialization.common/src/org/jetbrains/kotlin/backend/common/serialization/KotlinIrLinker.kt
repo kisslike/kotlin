@@ -144,7 +144,7 @@ abstract class KotlinIrLinker(
             val fileEntry = NaiveSourceBasedFileEntryImpl(fileName, fileProto.fileEntry.lineStartOffsetsList.toIntArray())
 
             val fileDeserializer =
-                IrDeserializerForFile(fileProto.annotationList, fileProto.actualsList, fileIndex, !strategy.needBodies, moduleDeserializer).apply {
+                IrDeserializerForFile(fileProto.annotationList, fileProto.actualsList, fileIndex, !strategy.needBodies, strategy.inlineBodies, moduleDeserializer).apply {
 
                     // Explicitly exported declarations (e.g. top-level initializers) must be deserialized before all other declarations.
                     // Thus we schedule their deserialization in deserializer's constructor.
@@ -204,16 +204,17 @@ abstract class KotlinIrLinker(
         private val actuals: List<ProtoActual>,
         private val fileIndex: Int,
         onlyHeaders: Boolean,
+        inlineBodies: Boolean,
         private val moduleDeserializer: IrModuleDeserializer
-    ) : IrFileDeserializer(logger, builtIns, symbolTable) {
+    ) : IrFileDeserializer(logger, builtIns, symbolTable, !onlyHeaders) {
 
         private var fileLoops = mutableMapOf<Int, IrLoopBase>()
 
         lateinit var file: IrFile
 
-        private val deserializeBodies: Boolean = !onlyHeaders
-
         private val irTypeCache = mutableMapOf<Int, IrType>()
+
+        override val deserializeInlineFunctions: Boolean = inlineBodies
 
         var reversedSignatureIndex = emptyMap<IdSignature, Int>()
 

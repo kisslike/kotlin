@@ -104,7 +104,7 @@ import org.jetbrains.kotlin.backend.common.serialization.proto.PublicIdSignature
 import org.jetbrains.kotlin.backend.common.serialization.proto.AccessorIdSignature as ProtoAccessorIdSignature
 import org.jetbrains.kotlin.backend.common.serialization.proto.FileLocalIdSignature as ProtoFileLocalIdSignature
 
-abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBuiltIns, val symbolTable: SymbolTable) {
+abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBuiltIns, val symbolTable: SymbolTable, protected var deserializeBodies: Boolean) {
 
     abstract fun deserializeIrSymbolToDeclare(code: Long): Pair<IrSymbol, IdSignature>
     abstract fun deserializeIrSymbol(code: Long): IrSymbol
@@ -119,6 +119,8 @@ abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBu
 
     private val parentsStack = mutableListOf<IrDeclarationParent>()
     private val delegatedSymbolMap = mutableMapOf<IrSymbol, IrSymbol>()
+
+    abstract val deserializeInlineFunctions: Boolean
 
     fun deserializeFqName(fqn: List<Int>): FqName {
         return fqn.run {
@@ -1090,24 +1092,36 @@ abstract class IrFileDeserializer(val logger: LoggingContext, val builtIns: IrBu
         return result
     }
 
+    private inline fun <T : IrFunction> T.withInlineGuard(block: T.() -> Unit) {
+        val oldInline = deserializeBodies
+        try {
+            deserializeBodies = oldInline || (deserializeInlineFunctions && this is IrSimpleFunction && isInline)
+            block()
+        } finally {
+            deserializeBodies = oldInline
+        }
+    }
+
     private inline fun <T : IrFunction> withDeserializedIrFunctionBase(
         proto: ProtoFunctionBase,
         block: (IrFunctionSymbol, IdSignature, Int, Int, IrDeclarationOrigin, Long) -> T
     ) = withDeserializedIrDeclarationBase(proto.base) { symbol, idSig, startOffset, endOffset, origin, fcode ->
         symbolTable.withScope(symbol.descriptor) {
             block(symbol as IrFunctionSymbol, idSig, startOffset, endOffset, origin, fcode).usingParent {
-                typeParameters = deserializeTypeParameters(proto.typeParameterList, false)
-                valueParameters = deserializeValueParameters(proto.valueParameterList)
+                withInlineGuard {
+                    typeParameters = deserializeTypeParameters(proto.typeParameterList, false)
+                    valueParameters = deserializeValueParameters(proto.valueParameterList)
 
-                val nameType = BinaryNameAndType.decode(proto.nameType)
-                returnType = deserializeIrType(nameType.typeIndex)
+                    val nameType = BinaryNameAndType.decode(proto.nameType)
+                    returnType = deserializeIrType(nameType.typeIndex)
 
-                if (proto.hasDispatchReceiver())
-                    dispatchReceiverParameter = deserializeIrValueParameter(proto.dispatchReceiver, -1)
-                if (proto.hasExtensionReceiver())
-                    extensionReceiverParameter = deserializeIrValueParameter(proto.extensionReceiver, -1)
-                if (proto.hasBody()) {
-                    body = deserializeStatementBody(proto.body) as IrBody
+                    if (proto.hasDispatchReceiver())
+                        dispatchReceiverParameter = deserializeIrValueParameter(proto.dispatchReceiver, -1)
+                    if (proto.hasExtensionReceiver())
+                        extensionReceiverParameter = deserializeIrValueParameter(proto.extensionReceiver, -1)
+                    if (proto.hasBody()) {
+                        body = deserializeStatementBody(proto.body) as IrBody
+                    }
                 }
             }
         }
