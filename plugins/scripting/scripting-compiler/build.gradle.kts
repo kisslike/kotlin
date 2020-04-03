@@ -32,7 +32,8 @@ dependencies {
     testCompile(projectTests(":compiler:tests-common"))
     testCompile(commonDep("junit:junit"))
 
-    testRuntimeOnly(intellijCoreDep()) { includeJars("intellij-core") }
+    testImplementation(intellijCoreDep()) { includeJars("intellij-core") }
+
     testRuntimeOnly(intellijDep()) { includeJars("jps-model") }
 }
 
@@ -60,4 +61,5 @@ testsJar()
 projectTest {
     dependsOn(":dist")
     workingDir = rootDir
+    systemProperty("kotlin.test.script.classpath", testSourceSet.output.classesDirs.joinToString(File.pathSeparator))
 }
