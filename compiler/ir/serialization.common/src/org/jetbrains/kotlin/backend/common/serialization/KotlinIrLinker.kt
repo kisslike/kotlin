@@ -133,9 +133,7 @@ abstract class KotlinIrLinker(
             }
         }
 
-        override fun postProcess() {
-            fileToDeserializerMap.values.forEach { it.deserializeExpectActualMapping() }
-        }
+        override fun postProcess() {}
 
         override val moduleFragment: IrModuleFragment = IrModuleFragmentImpl(moduleDescriptor, builtIns, emptyList())
 
@@ -471,9 +469,9 @@ abstract class KotlinIrLinker(
         }
     }
 
-    private val ByteArray.codedInputStream: org.jetbrains.kotlin.protobuf.CodedInputStream
+    private val ByteArray.codedInputStream: CodedInputStream
         get() {
-            val codedInputStream = org.jetbrains.kotlin.protobuf.CodedInputStream.newInstance(this)
+            val codedInputStream = CodedInputStream.newInstance(this)
             codedInputStream.setRecursionLimit(65535) // The default 64 is blatantly not enough for IR.
             return codedInputStream
         }
@@ -502,8 +500,7 @@ abstract class KotlinIrLinker(
     private fun handleExpectActualMapping(idSig: IdSignature, rawSymbol: IrSymbol): IrSymbol {
         val referencingSymbol = if (idSig in expectUniqIdToActualUniqId.keys) {
             assert(idSig.run { IdSignature.Flags.IS_EXPECT.test() })
-            expectSymbols[idSig] = rawSymbol
-            wrapInDelegatedSymbol(rawSymbol)
+            wrapInDelegatedSymbol(rawSymbol).also { expectSymbols[idSig] = it }
         } else rawSymbol
 
         if (idSig in expectUniqIdToActualUniqId.values) {
