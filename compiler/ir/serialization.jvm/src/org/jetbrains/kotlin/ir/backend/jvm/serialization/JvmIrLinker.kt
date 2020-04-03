@@ -6,14 +6,9 @@
 package org.jetbrains.kotlin.ir.backend.jvm.serialization
 
 import org.jetbrains.kotlin.backend.common.LoggingContext
-import org.jetbrains.kotlin.backend.common.serialization.CurrentModuleDeserializer
-import org.jetbrains.kotlin.backend.common.serialization.DeserializationStrategy
-import org.jetbrains.kotlin.backend.common.serialization.IrModuleDeserializer
-import org.jetbrains.kotlin.backend.common.serialization.KotlinIrLinker
+import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.backend.common.serialization.encodings.BinarySymbolData
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.konan.KlibModuleOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrModuleFragmentImpl
@@ -77,29 +72,28 @@ class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Sym
         IrModuleDeserializer(moduleDescriptor) {
         override fun contains(idSig: IdSignature): Boolean = true
 
-        private val classDescriptor = WrappedClassDescriptor()
-        private val propertyDescriptor = WrappedPropertyDescriptor()
-        private val functionDescriptor = WrappedSimpleFunctionDescriptor()
-        private val constructorDescriptor = WrappedClassConstructorDescriptor()
-        private val enumEntryDescriptor = WrappedEnumEntryDescriptor()
-        private val typeAliasDescriptor = WrappedTypeAliasDescriptor()
+        private val descriptorFinder = DescriptorByIdSignatureFinder(moduleDescriptor, JvmManglerDesc(null /* TODO: could main be referenced here? */))
+
+        private fun resolveDescriptor(idSig: IdSignature): DeclarationDescriptor {
+            return descriptorFinder.findDescriptorBySignature(idSig) ?: error("No descriptor found for $idSig")
+        }
 
         override fun deserializeIrSymbol(idSig: IdSignature, symbolKind: BinarySymbolData.SymbolKind): IrSymbol {
-            val symbol = symbolTable.run {
+            val descriptor = resolveDescriptor(idSig)
+
+            val declaration = stubGenerator.run {
                 when (symbolKind) {
-                    BinarySymbolData.SymbolKind.CLASS_SYMBOL -> referenceClassFromLinker(classDescriptor, idSig)
-                    BinarySymbolData.SymbolKind.PROPERTY_SYMBOL -> referencePropertyFromLinker(propertyDescriptor, idSig)
-                    BinarySymbolData.SymbolKind.FUNCTION_SYMBOL -> referenceSimpleFunctionFromLinker(functionDescriptor, idSig)
-                    BinarySymbolData.SymbolKind.CONSTRUCTOR_SYMBOL -> referenceConstructorFromLinker(constructorDescriptor, idSig)
-                    BinarySymbolData.SymbolKind.ENUM_ENTRY_SYMBOL -> referenceEnumEntryFromLinker(enumEntryDescriptor, idSig)
-                    BinarySymbolData.SymbolKind.TYPEALIAS_SYMBOL -> referenceTypeAliasFromLinker(typeAliasDescriptor, idSig)
+                    BinarySymbolData.SymbolKind.CLASS_SYMBOL -> generateClassStub(descriptor as ClassDescriptor)
+                    BinarySymbolData.SymbolKind.PROPERTY_SYMBOL -> generatePropertyStub(descriptor as PropertyDescriptor)
+                    BinarySymbolData.SymbolKind.FUNCTION_SYMBOL -> generateFunctionStub(descriptor as FunctionDescriptor)
+                    BinarySymbolData.SymbolKind.CONSTRUCTOR_SYMBOL -> generateConstructorStub(descriptor as ClassConstructorDescriptor)
+                    BinarySymbolData.SymbolKind.ENUM_ENTRY_SYMBOL -> generateEnumEntryStub(descriptor as ClassDescriptor)
+                    BinarySymbolData.SymbolKind.TYPEALIAS_SYMBOL -> generateTypeAliasStub(descriptor as TypeAliasDescriptor)
                     else -> error("Unexpected type $symbolKind for sig $idSig")
                 }
             }
 
-            stubGenerator.generateMemberStub(symbol.descriptor)
-
-            return symbol
+            return declaration.symbol
         }
 
         override fun declareIrSymbol(symbol: IrSymbol) {
@@ -108,11 +102,11 @@ class JvmIrLinker(logger: LoggingContext, builtIns: IrBuiltIns, symbolTable: Sym
         }
 
         override fun addModuleReachableTopLevel(idSig: IdSignature) {
-            TODO("Not yet implemented")
+            error("Unsupported (sig: $idSig)")
         }
 
         override fun deserializeReachableDeclarations() {
-            TODO("Not yet implemented")
+            error("Unsupported")
         }
 
         override fun postProcess() {}
