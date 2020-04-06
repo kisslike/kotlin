@@ -135,6 +135,7 @@ dependencies {
     compile(project(":kotlin-script-runtime"))
     compile(project(":kotlin-reflect"))
     compile(commonDep("org.jetbrains.intellij.deps", "trove4j"))
+    compile(commonDep("org.jetbrains.kotlinx:kotlinx-collections-immutable-jvm:${property("versions.kotlinx-collections-immutable")}"))
 
     proguardLibraries(project(":kotlin-annotations-jvm"))
 
@@ -148,6 +149,7 @@ dependencies {
 
     libraries(intellijDep()) { includeIntellijCoreJarDependencies(project) { it.startsWith("trove4j") } }
     libraries(commonDep("io.ktor", "ktor-network"))
+    libraries(commonDep("org.jetbrains.kotlinx:kotlinx-collections-immutable-jvm:${property("versions.kotlinx-collections-immutable")}"))
     libraries(kotlinStdlib("jdk8"))
     if (!kotlinBuildProperties.isInJpsBuildIdeaSync) {
         libraries(kotlinStdlib("js", "distLibrary"))
