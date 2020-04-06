@@ -36,7 +36,6 @@ object JvmBackendFacade {
         val signaturer = JvmIdSignatureDescriptor(mangler)
         val psi2ir = Psi2IrTranslator(state.languageVersionSettings, signaturer = signaturer)
         val psi2irContext = psi2ir.createGeneratorContext(state.module, state.bindingContext, extensions = extensions)
-        val psi2irGenerator = psi2ir.createModuleGenerator(psi2irContext)
         val pluginExtensions = IrGenerationExtension.getInstances(state.project)
 
         for (extension in pluginExtensions) {
@@ -67,7 +66,7 @@ object JvmBackendFacade {
 
         stubGenerator.setIrProviders(irProviders)
 
-        val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, irProviders, expectDescriptorToSymbol = null, pluginExtensions)
+        val irModuleFragment = psi2ir.generateModuleFragment(psi2irContext, files, irProviders, expectDescriptorToSymbol = null, pluginExtensions)
         irLinker.postProcess()
         // We need to compile all files we reference in Klibs
         irModuleFragment.files.addAll(dependencies.flatMap { it.files })

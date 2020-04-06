@@ -64,9 +64,8 @@ class JsCoreScriptingCompiler(
         val signaturer = IdSignatureDescriptor(mangler)
         val psi2ir = Psi2IrTranslator(environment.configuration.languageVersionSettings, signaturer = signaturer)
         val psi2irContext = psi2ir.createGeneratorContext(module, bindingContext, symbolTable)
-        val psi2irGenerator = psi2ir.createModuleGenerator(psi2irContext)
         val providers = generateTypicalIrProviderList(module, psi2irContext.irBuiltIns, psi2irContext.symbolTable)
-        val irModuleFragment = psi2ir.generateModuleFragment(psi2irGenerator, files, providers, null) // TODO: deserializer
+        val irModuleFragment = psi2ir.generateModuleFragment(psi2irContext, files, providers, null) // TODO: deserializer
 
         val context = JsIrBackendContext(
             irModuleFragment.descriptor,

@@ -51,11 +51,10 @@ class Psi2IrTranslator(
         generatorExtensions: GeneratorExtensions
     ): IrModuleFragment {
         val context = createGeneratorContext(moduleDescriptor, bindingContext, extensions = generatorExtensions)
-        val moduleGenerator = createModuleGenerator(context)
         val irProviders = generateTypicalIrProviderList(
             moduleDescriptor, context.irBuiltIns, context.symbolTable, extensions = generatorExtensions
         )
-        return generateModuleFragment(moduleGenerator, ktFiles, irProviders)
+        return generateModuleFragment(context, ktFiles, irProviders)
     }
 
     fun createGeneratorContext(
@@ -66,16 +65,14 @@ class Psi2IrTranslator(
     ): GeneratorContext =
         createGeneratorContext(configuration, moduleDescriptor, bindingContext, languageVersionSettings, symbolTable, extensions, signaturer)
 
-    fun createModuleGenerator(context: GeneratorContext): ModuleGenerator = ModuleGenerator(context)
-
     fun generateModuleFragment(
-        moduleGenerator: ModuleGenerator,
+        context: GeneratorContext,
         ktFiles: Collection<KtFile>,
         irProviders: List<IrProvider>,
         expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null,
         pluginExtensions: Collection<IrExtensionGenerator> = emptyList()
     ): IrModuleFragment {
-        val context = moduleGenerator.context
+        val moduleGenerator = ModuleGenerator(context)
         val irModule = moduleGenerator.generateModuleFragmentWithoutDependencies(ktFiles)
 
         irModule.patchDeclarationParents()

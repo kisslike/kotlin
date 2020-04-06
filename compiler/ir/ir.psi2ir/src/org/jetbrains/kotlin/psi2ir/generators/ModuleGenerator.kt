@@ -31,17 +31,16 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 class ModuleGenerator(override val context: GeneratorContext) : Generator {
 
     private val constantValueGenerator = context.constantValueGenerator
-    val moduleFragment = IrModuleFragmentImpl(context.moduleDescriptor, context.irBuiltIns)
 
     fun generateModuleFragment(ktFiles: Collection<KtFile>, deserializer: IrDeserializer, extensions: StubGeneratorExtensions = StubGeneratorExtensions.EMPTY): IrModuleFragment =
         generateModuleFragmentWithoutDependencies(ktFiles).also { irModule ->
             generateUnboundSymbolsAsDependencies(irModule, deserializer, extensions)
         }
 
-    fun generateModuleFragmentWithoutDependencies(ktFiles: Collection<KtFile>): IrModuleFragment {
-        moduleFragment.files.addAll(generateFiles(ktFiles))
-        return moduleFragment
-    }
+    fun generateModuleFragmentWithoutDependencies(ktFiles: Collection<KtFile>): IrModuleFragment =
+        IrModuleFragmentImpl(context.moduleDescriptor, context.irBuiltIns).also { irModule ->
+            irModule.files.addAll(generateFiles(ktFiles))
+        }
 
 
     fun generateUnboundSymbolsAsDependencies(

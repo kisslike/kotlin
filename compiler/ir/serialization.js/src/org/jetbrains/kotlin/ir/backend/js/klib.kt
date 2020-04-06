@@ -276,7 +276,6 @@ fun GeneratorContext.generateModuleFragmentWithPlugins(
 ): IrModuleFragment {
     val signaturer = IdSignatureDescriptor(JsManglerDesc)
     val psi2Ir = Psi2IrTranslator(languageVersionSettings, configuration, signaturer)
-    val psi2irModuleGenerator = psi2Ir.createModuleGenerator(this)
 
     val extensions = IrGenerationExtension.getInstances(project)
 
@@ -296,8 +295,7 @@ fun GeneratorContext.generateModuleFragmentWithPlugins(
         }
     }
 
-//    irLinker.init(psi2irModuleGenerator.moduleFragment, extensions)
-    return psi2Ir.generateModuleFragment(psi2irModuleGenerator, files, listOf(irLinker), expectDescriptorToSymbol, extensions)
+    return psi2Ir.generateModuleFragment(this, files, listOf(irLinker), expectDescriptorToSymbol, extensions)
 }
 
 private fun createBuiltIns(storageManager: StorageManager) = object : KotlinBuiltIns(storageManager) {}
