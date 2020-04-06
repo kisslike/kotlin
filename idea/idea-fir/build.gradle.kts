@@ -18,6 +18,9 @@ dependencies {
     testCompileOnly(intellijDep())
     testRuntime(intellijDep())
 
+    if (Ide.AS35.orLower()) {
+        testRuntimeOnly(intellijPluginDep("Groovy"))
+    }
     Platform[192].orHigher {
         testCompileOnly(intellijPluginDep("java"))
         testRuntime(intellijPluginDep("java"))
