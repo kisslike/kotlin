@@ -35,9 +35,12 @@ object CommonParser {
     fun parsePath(pathPartRegex: String, testFilePath: String) =
         Pattern.compile(testPathBaseRegexTemplate.format(pathPartRegex)).matcher(testFilePath)
 
+    fun parseImplTest(testFilePath: String, files: TestFiles): Pair<LinkedSpecTest, SpecTestLinkedType>
+            = Pair(parseLinkedSpecTest(testFilePath, files, isImplementationTest=true), SpecTestLinkedType.LINKED)
+
     fun parseSpecTest(testFilePath: String, files: TestFiles) = when { //TODO()
         isPathMatched(LinkedSpecTestPatterns.pathPartRegex, testFilePath) ->
-            Pair(parseLinkedSpecTest(testFilePath, files), SpecTestLinkedType.LINKED)
+            Pair(parseLinkedSpecTest(testFilePath, files), SpecTestLinkedType.LINKED)!!
         isPathMatched(NotLinkedSpecTestPatterns.pathPartRegex, testFilePath) ->
             Pair(parseNotLinkedSpecTest(testFilePath, files), SpecTestLinkedType.NOT_LINKED)
         else ->
@@ -54,7 +57,7 @@ object CommonParser {
             ?: throw SpecTestValidationException(SpecTestValidationFailedReason.TESTINFO_NOT_VALID)
         val specVersion = matcher.group("specVersion")
         val testSpecSentenceList = matcher.group("testSpecSentenceList")
-        val primarySpecSentenceListMatcher = LinkedSpecTestPatterns.primaryLinks.matcher(testSpecSentenceList)
+        val primarySpecSentenceListMatcher = ImplementationTestPatterns.primaryLinks.matcher(testSpecSentenceList)
         val secondarySpecSentenceListMatcher = ImplementationTestPatterns.relevantSpecSentencesPattern.matcher(testSpecSentenceList)
         val specPlaces = mutableListOf<SpecPlace>()
 
@@ -98,9 +101,14 @@ object CommonParser {
         }
     }
 
-    fun parseLinkedSpecTest(testFilePath: String, testFiles: TestFiles): LinkedSpecTest {
+    fun parseLinkedSpecTest(testFilePath: String, testFiles: TestFiles, isImplementationTest: Boolean = false): LinkedSpecTest {
         val relevantAndAlternativePlaces = mutableListOf<SpecPlace>()
-        val parsedTestFile = tryParseTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)
+        val parsedTestFile =
+            if (!isImplementationTest){tryParseTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)}
+        else {
+                tryParseImplementationTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)
+            }
+
         val testInfoElements = parsedTestFile.testInfoElements
         val placeMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.MAIN_LINK]!!.additionalMatcher!!
         val relevantPlacesMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher

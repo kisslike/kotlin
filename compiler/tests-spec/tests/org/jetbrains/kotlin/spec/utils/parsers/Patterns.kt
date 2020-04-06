@@ -83,7 +83,7 @@ object LinkedSpecTestPatterns : BasePatterns {
     val relevantLinksPattern: Pattern =
         Pattern.compile("""(( $ASTERISK_REGEX )?\s*((?<sections>$SECTIONS_IN_FILE_REGEX) -> )?(paragraph (?<paragraphNumber>$INTEGER_REGEX) -> )?sentence (?<sentenceNumber>$INTEGER_REGEX))+""")
 
-    private val linkRegex =
+    val linkRegex =
         Regex("""(( $ASTERISK_REGEX )?\s*($SECTIONS_IN_FILE_REGEX -> )?(paragraph $INTEGER_REGEX -> )?sentence $INTEGER_REGEX)""")
 
     val primaryLinks: Pattern = Pattern.compile("""$PRIMARY_LINKS: (?<places>(${linkRegex}(\s)*\n)+)""")
@@ -113,9 +113,52 @@ object ImplementationTestPatterns {
     const val SPEC_VERSION = """spec version: (?<specVersion>\d+\.[0-9]\d*\-[0-9]\d*)"""
     const val TEST_TYPE = """test type: (?<testType>pos|neg)"""
     const val TEST_SPEC_SENTENCES = """?<testSpecSentenceList>(\n\s+\*\s+.*?)"""
+    val linkRegex =
+        Regex("""(( $ASTERISK_REGEX )?\s*($SECTIONS_IN_FILE_REGEX -> )?(paragraph $INTEGER_REGEX -> )?sentence $INTEGER_REGEX)""")
 
     val testInfoPattern: Pattern =
         Pattern.compile(MULTILINE_COMMENT_REGEX.format("""\*\s+$SPEC_LINKS \($SPEC_VERSION, $TEST_TYPE\):($TEST_SPEC_SENTENCES+)"""))
     val relevantSpecSentencesPattern: Pattern =
         Pattern.compile("""\n\s+\*\s+-\s+(?<specSections>.*?) -> paragraph (?<specParagraph>[1-9]\d*) -> sentence (?<specSentence>[1-9]\d*)""")
+
+    val primaryLinks: Pattern =
+        Pattern.compile("""SECONDARY LINKS: (?<places>(${linkRegex}\s*\n?)+)""")
+
+
+}
+
+
+fun main() {
+
+    val x =  " expressions, call-and-property-access-expressions, callable-references -> paragraph 11 -> sentence 3\n" +
+    " * expressions, call-and-property-access-expressions, callable-references -> paragraph 1122 -> sentence 333"
+//    val xmatcher  =ImplementationTestPatterns.linkRegex.toPattern().matcher(x)
+    val xmatcher  =ImplementationTestPatterns.primaryLinks.matcher(x)
+
+    while (xmatcher.find()) {
+        println("qd")
+    }
+    val tesSpecSentenceList = "\n" +
+            " * PRIMARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 11 -> sentence 3\n" +
+            " * expressions, call-and-property-access-expressions, callable-references -> paragraph 1111 -> sentence 1111\n" +
+            " * SECONDARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 222 -> sentence 22222\n" +
+            " * expressions, call-and-property-access-expressions, callable-references -> paragraph 3333 -> sentence 333"
+    val primarySpecSentenceListMatcher = ImplementationTestPatterns.primaryLinks.matcher(tesSpecSentenceList)
+
+    while (primarySpecSentenceListMatcher.find()) {
+        val x = primarySpecSentenceListMatcher.group("places")
+
+        val matcher = LinkedSpecTestPatterns.relevantLinksPattern.matcher(x)
+
+
+        while (matcher.find()) {
+
+            val sections = matcher.group("sections")
+            val paragraphNumber = matcher.group("paragraphNumber").toInt()
+            val sentenceNumber = matcher.group("sentenceNumber").toInt()
+
+            println("$sections paragraph $paragraphNumber sentence $sentenceNumber")
+        }
+    }
+
 }

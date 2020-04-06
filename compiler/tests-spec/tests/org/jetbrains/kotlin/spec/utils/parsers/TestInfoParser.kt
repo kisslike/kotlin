@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.TestsExceptionType
 import org.jetbrains.kotlin.spec.utils.*
 import org.jetbrains.kotlin.spec.utils.models.CommonInfoElementType
 import org.jetbrains.kotlin.spec.utils.models.CommonSpecTestFileInfoElementType
+import org.jetbrains.kotlin.spec.utils.models.LinkedSpecTest
 import org.jetbrains.kotlin.spec.utils.models.SpecTestInfoElements
 import org.jetbrains.kotlin.spec.utils.validators.SpecTestValidationException
 import org.jetbrains.kotlin.spec.utils.validators.SpecTestValidationFailedReason
@@ -62,9 +63,57 @@ private fun parseTestInfo(testFilePath: String, testFiles: TestFiles, linkedTest
     )
 }
 
+
+private fun parseImplementationTestInfo(testFilePath: String,  testFiles: TestFiles, linkedTestType: SpecTestLinkedType): ParsedTestFile {
+    val patterns = linkedTestType.patterns.value
+    val testInfoByFilenameMatcher = patterns.testPathPattern.matcher(testFilePath)
+
+//    if (!testInfoByFilenameMatcher.find())
+//    {return null}
+    ///   throw SpecTestValidationException(SpecTestValidationFailedReason.FILENAME_NOT_VALID)
+
+    val testInfoByContentMatcher = patterns.testInfoPattern.matcher(FileUtil.loadFile(File(testFilePath), true))
+
+    if (!testInfoByContentMatcher.find()) {
+        throw SpecTestValidationException(SpecTestValidationFailedReason.TESTINFO_NOT_VALID)
+    }
+
+    val testInfoElements = CommonParser.parseTestInfoElements(
+        arrayOf(*CommonInfoElementType.values(), /**CommonSpecTestFileInfoElementType.values(),*/ *linkedTestType.infoElements.value),
+        testInfoByContentMatcher.group("infoElements")
+    )
+    val helpers = testInfoElements[CommonSpecTestFileInfoElementType.HELPERS]?.content?.splitByComma()?.toSet()
+
+    val testArea = TestArea.valueOf(testInfoByContentMatcher.group("testArea").withUnderscores())
+    val testType = TestType.valueOf(testInfoByContentMatcher.group("testType"))
+    val fileName =  testFilePath.split("/").last()
+    val fileNameWithoutExtension =  testFilePath.split("/").last().replace(".kt", "")
+    val description = fileNameWithoutExtension.toUpperCase()[0] +
+            fileNameWithoutExtension.substring(1).replace(Regex("""([A-Z])"""), " $1").toLowerCase()
+ //   LinkedSpecTest.getInstanceForImplementationTest(specVersion, testArea, testType, specPlaces, file.nameWithoutExtension)
+    return ParsedTestFile(
+        testArea = TestArea.valueOf(testInfoByContentMatcher.group("testArea").withUnderscores()),
+        testType = TestType.valueOf(testInfoByContentMatcher.group("testType")),
+        testNumber = testInfoElements[CommonSpecTestFileInfoElementType.NUMBER]?.content?.toInt() ?: 0,
+        testDescription = description, //TODO
+        testInfoElements = testInfoElements,
+        testCasesSet = SpecTestCasesSet(mutableMapOf(), mutableMapOf(), mutableMapOf()), //todo
+        unexpectedBehavior = testInfoElements.contains(CommonInfoElementType.UNEXPECTED_BEHAVIOUR),
+        issues = CommonParser.parseIssues(testInfoElements[CommonInfoElementType.ISSUES]),
+        helpers = helpers,
+        exception = testInfoElements[CommonInfoElementType.EXCEPTION]?.content?.let { TestsExceptionType.fromValue(it) }
+    )
+}
 fun tryParseTestInfo(testFilePath: String, testFiles: TestFiles, linkedTestType: SpecTestLinkedType): ParsedTestFile {
     try {
         return parseTestInfo(testFilePath, testFiles, linkedTestType)
+    } catch (e: Exception) {
+        error("Wrong format of file:\nfile://$testFilePath \n${e.message}")
+    }
+}
+fun tryParseImplementationTestInfo(testFilePath: String,  testFiles: TestFiles, linkedTestType: SpecTestLinkedType): ParsedTestFile {
+    try {
+        return parseImplementationTestInfo(testFilePath, testFiles, linkedTestType)
     } catch (e: Exception) {
         error("Wrong format of file:\nfile://$testFilePath \n${e.message}")
     }

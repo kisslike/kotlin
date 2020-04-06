@@ -13,6 +13,9 @@ import org.jetbrains.kotlin.spec.utils.models.LinkedSpecTest
 import org.jetbrains.kotlin.spec.utils.models.SpecPlace
 import org.jetbrains.kotlin.spec.utils.parsers.CommonParser
 import org.jetbrains.kotlin.spec.utils.parsers.CommonParser.parseImplementationTest
+import org.jetbrains.kotlin.spec.utils.parsers.LinkedSpecTestPatterns
+import org.jetbrains.kotlin.spec.utils.parsers.tryParseImplementationTestInfo
+import org.jetbrains.kotlin.spec.utils.parsers.tryParseTestInfo
 import java.io.File
 
 object TestsJsonMapGenerator {
@@ -76,16 +79,33 @@ object TestsJsonMapGenerator {
             for (file in files) {
                 if (!file.isFile || file.extension != "kt") continue
 
-                val parsedImplementationTest = parseImplementationTest(file, testArea) ?: continue
-                val relevantPlaces = parsedImplementationTest.relevantPlaces ?: listOf()
+                if (!LinkedSpecTestPatterns.testInfoPattern.matcher(file.readText()).find())
+                    continue
+                val (specTest, _) = CommonParser.parseImplTest(file.canonicalPath, mapOf("main.kt" to file.readText()))
 
-                (relevantPlaces + parsedImplementationTest.place).forEach specPlaces@ { specPlace ->
-                    val parsedAdditionalImplementationTest = parseImplementationTest(file, testArea) ?: return@specPlaces
+              //  val parsedTestFile = tryParseImplementationTestInfo(file.canonicalPath, mapOf("main.kt" to file.readText()), SpecTestLinkedType.LINKED)
 
-                    testsMap.getOrCreateSpecTestObject(specPlace, testArea, parsedImplementationTest.testType).add(
-                        getTestInfo(parsedAdditionalImplementationTest, file)
-                    )
+
+                if (specTest is LinkedSpecTest){
+                    val testInfo = getTestInfo(specTest)
+                    val testInfoWithFilePath = getTestInfo(specTest, file)
+
+                    testsMap.getOrCreateSpecTestObject(specTest.place, specTest.testArea, specTest.testType).add(testInfoWithFilePath)
+
+                    specTest.relevantPlaces?.forEach {
+                        testsMap.getOrCreateSpecTestObject(it, specTest.testArea, specTest.testType).add(testInfoWithFilePath)
+                    }
                 }
+//                val parsedImplementationTest = parseImplementationTest(file, testArea) ?: continue
+//                val relevantPlaces = parsedImplementationTest.relevantPlaces ?: listOf()
+//
+//                (relevantPlaces + parsedImplementationTest.place).forEach specPlaces@ { specPlace ->
+//                    val parsedAdditionalImplementationTest = parseImplementationTest(file, testArea) ?: return@specPlaces
+//
+//                    testsMap.getOrCreateSpecTestObject(specPlace, testArea, parsedImplementationTest.testType).add(
+//                        getTestInfo(parsedAdditionalImplementationTest, file)
+//                    )
+//                }
             }
         }
     }
