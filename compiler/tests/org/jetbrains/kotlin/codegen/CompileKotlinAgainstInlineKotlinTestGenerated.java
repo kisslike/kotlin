@@ -3132,6 +3132,11 @@ public class CompileKotlinAgainstInlineKotlinTestGenerated extends AbstractCompi
             runTest("compiler/testData/codegen/boxInline/simple/captureAndArgumentIncompatibleTypes.kt");
         }
 
+        @TestMetadata("classCycle.kt")
+        public void testClassCycle() throws Exception {
+            runTest("compiler/testData/codegen/boxInline/simple/classCycle.kt");
+        }
+
         @TestMetadata("classObject.kt")
         public void testClassObject() throws Exception {
             runTest("compiler/testData/codegen/boxInline/simple/classObject.kt");

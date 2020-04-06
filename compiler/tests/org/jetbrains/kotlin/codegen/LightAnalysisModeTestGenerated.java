@@ -17616,6 +17616,11 @@ public class LightAnalysisModeTestGenerated extends AbstractLightAnalysisModeTes
         @TestDataPath("$PROJECT_ROOT")
         @RunWith(JUnit3RunnerWithInners.class)
         public static class Optimized extends AbstractLightAnalysisModeTest {
+            @TestMetadata("callableReferencesToSamePropertiesFromDifferentPackages.kt")
+            public void ignoreCallableReferencesToSamePropertiesFromDifferentPackages() throws Exception {
+                runTest("compiler/testData/codegen/box/multifileClasses/optimized/callableReferencesToSamePropertiesFromDifferentPackages.kt");
+            }
+
             private void runTest(String testDataFilePath) throws Exception {
                 KotlinTestUtils.runTest(this::doTest, TargetBackend.JVM, testDataFilePath);
             }
@@ -17652,11 +17657,6 @@ public class LightAnalysisModeTestGenerated extends AbstractLightAnalysisModeTes
             @TestMetadata("callableReferencesToSameFunctionsFromDifferentPackages.kt")
             public void testCallableReferencesToSameFunctionsFromDifferentPackages() throws Exception {
                 runTest("compiler/testData/codegen/box/multifileClasses/optimized/callableReferencesToSameFunctionsFromDifferentPackages.kt");
-            }
-
-            @TestMetadata("callableReferencesToSamePropertiesFromDifferentPackages.kt")
-            public void testCallableReferencesToSamePropertiesFromDifferentPackages() throws Exception {
-                runTest("compiler/testData/codegen/box/multifileClasses/optimized/callableReferencesToSamePropertiesFromDifferentPackages.kt");
             }
 
             @TestMetadata("calls.kt")
