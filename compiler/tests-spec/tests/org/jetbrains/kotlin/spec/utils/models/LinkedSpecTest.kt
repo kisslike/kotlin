@@ -24,10 +24,10 @@ enum class LinkedSpecTestFileInfoElementType(
     override val required: Boolean = false
 ) : SpecTestInfoElementType {
     SPEC_VERSION(required = true),
-    MAIN_LINK(valuePattern = mainLinkPattern, required = true),
+    MAIN_LINK(valuePattern = mainLinkPattern),
     PRIMARY_LINKS(valuePattern = relevantLinksPattern),
     SECONDARY_LINKS(valuePattern = relevantLinksPattern),
-    UNSPECIFIED_BEHAVIOR
+    UNSPECIFIED_BEHAVIOR;
 }
 
 data class SpecPlace(

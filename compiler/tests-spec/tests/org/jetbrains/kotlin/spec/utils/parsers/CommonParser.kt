@@ -90,9 +90,11 @@ object CommonParser {
 
     private fun parseRelevantAndAlternativePlaces(
         placesMatcher: Matcher?,
-        placeMatcher: Matcher,
+        placeMatcher: Matcher?,
         relevantAndAlternativePlaces: MutableList<SpecPlace>
     ) {
+        if (placeMatcher == null)
+            return
         placesMatcher?.let {
             relevantAndAlternativePlaces.add(createSpecPlace(it, placeMatcher))
             while (it.find()) {
@@ -110,20 +112,23 @@ object CommonParser {
             }
 
         val testInfoElements = parsedTestFile.testInfoElements
-        val placeMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.MAIN_LINK]!!.additionalMatcher!!
+        val placeMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.MAIN_LINK]?.additionalMatcher
         val relevantPlacesMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher
-        parseRelevantAndAlternativePlaces(relevantPlacesMatcher, placeMatcher, relevantAndAlternativePlaces)
+        parseRelevantAndAlternativePlaces(relevantPlacesMatcher, testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher, relevantAndAlternativePlaces)
 
         val alternativeRelevantPlacesMatcher =
             testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher
-        parseRelevantAndAlternativePlaces(alternativeRelevantPlacesMatcher, placeMatcher, relevantAndAlternativePlaces)
+        parseRelevantAndAlternativePlaces(alternativeRelevantPlacesMatcher, testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher, relevantAndAlternativePlaces)
 
+
+        val mainPlace = if (placeMatcher != null)            createSpecPlace(placeMatcher)
+        else relevantAndAlternativePlaces.first()
 
         return LinkedSpecTest(
             testInfoElements[LinkedSpecTestFileInfoElementType.SPEC_VERSION]!!.content,
             parsedTestFile.testArea,
             parsedTestFile.testType,
-            createSpecPlace(placeMatcher),
+            mainPlace,
             relevantAndAlternativePlaces,
             parsedTestFile.testNumber,
             parsedTestFile.testDescription,

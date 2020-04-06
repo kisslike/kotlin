@@ -12,9 +12,68 @@
       ]
     }
   },
+  "1441": {
+    "pos": {
+      "344": [
+        {
+          "specVersion": "0.1-220",
+          "casesNumber": 0,
+          "description": "Callable reference as last expression in block",
+          "path": "compiler/testData/diagnostics/tests/callableReference/callableReferenceAsLastExpressionInBlock.kt",
+          "unexpectedBehaviour": false
+        }
+      ]
+    }
+  },
+  "1111": {
+    "pos": {
+      "1111": [
+        {
+          "specVersion": "0.1-220",
+          "casesNumber": 0,
+          "description": "Callable reference as last expression in block",
+          "path": "compiler/testData/diagnostics/tests/callableReference/callableReferenceAsLastExpressionInBlock.kt",
+          "unexpectedBehaviour": false
+        }
+      ]
+    }
+  },
+  "222": {
+    "pos": {
+      "22222": [
+        {
+          "specVersion": "0.1-220",
+          "casesNumber": 0,
+          "description": "Callable reference as last expression in block",
+          "path": "compiler/testData/diagnostics/tests/callableReference/callableReferenceAsLastExpressionInBlock.kt",
+          "unexpectedBehaviour": false
+        }
+      ]
+    }
+  },
+  "3333": {
+    "pos": {
+      "333": [
+        {
+          "specVersion": "0.1-220",
+          "casesNumber": 0,
+          "description": "Callable reference as last expression in block",
+          "path": "compiler/testData/diagnostics/tests/callableReference/callableReferenceAsLastExpressionInBlock.kt",
+          "unexpectedBehaviour": false
+        }
+      ]
+    }
+  },
   "3": {
     "pos": {
       "1": [
+        {
+          "specVersion": "0.1-220",
+          "casesNumber": 0,
+          "description": "Bare type",
+          "path": "compiler/testData/diagnostics/tests/callableReference/bareType.kt",
+          "unexpectedBehaviour": false
+        },
         {
           "specVersion": "0.1-220",
           "casesNumber": 0,
