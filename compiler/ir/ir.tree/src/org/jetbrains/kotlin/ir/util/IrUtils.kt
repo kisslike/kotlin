@@ -296,6 +296,7 @@ fun IrSimpleFunction.collectRealOverrides(toSkip: (IrSimpleFunction) -> Boolean 
 // TODO: use this implementation instead of any other
 fun IrSimpleFunction.resolveFakeOverride(toSkip: (IrSimpleFunction) -> Boolean = { false }, allowAbstract: Boolean = false): IrSimpleFunction? {
     val reals = collectRealOverrides(toSkip)
+    if (this.name.toString().contains("$")) println("RESOLVE FAKE OVERRIDE REALS for ${this.render()}:\n\t${reals.map{it.render()}.joinToString(" ")}")
     return if (allowAbstract) {
         if (reals.isEmpty()) error("No real overrides for ${this.render()}")
         reals.first()
@@ -304,7 +305,7 @@ fun IrSimpleFunction.resolveFakeOverride(toSkip: (IrSimpleFunction) -> Boolean =
         .filter { it.modality != Modality.ABSTRACT }
         .let { realOverrides ->
             // Kotlin forbids conflicts between overrides, but they may trickle down from Java.
-            realOverrides.singleOrNull { it.parent.safeAs<IrClass>()?.isInterface != true } ?: realOverrides.singleOrNull()
+            realOverrides.singleOrNull { it.parent.safeAs<IrClass>()?.isInterface != true } ?: realOverrides.firstOrNull()
         }
     }
 }

@@ -25,10 +25,7 @@ import org.jetbrains.kotlin.ir.backend.js.utils.NameTables
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.StageController
 import org.jetbrains.kotlin.ir.declarations.stageController
-import org.jetbrains.kotlin.ir.util.ExternalDependenciesGenerator
-import org.jetbrains.kotlin.ir.util.allUnbound
-import org.jetbrains.kotlin.ir.util.generateTypicalIrProviderList
-import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.library.KotlinLibrary
 import org.jetbrains.kotlin.library.resolver.KotlinLibraryResolveResult
 import org.jetbrains.kotlin.name.FqName
@@ -66,7 +63,10 @@ fun compile(
 
     // Load declarations referenced during `context` initialization
     dependencyModules.forEach {
-        val irProviders = generateTypicalIrProviderList(it.descriptor, irBuiltIns, symbolTable, deserializer)
+        val irProviders = when(mainModule) {
+            is MainModule.SourceFiles -> generateTypicalIrProviderList2(it.descriptor, irBuiltIns, symbolTable, deserializer)
+            is MainModule.Klib -> generateTypicalIrProviderList(it.descriptor, irBuiltIns, symbolTable, deserializer)
+        }
         ExternalDependenciesGenerator(symbolTable, irProviders).generateUnboundSymbolsAsDependencies()
     }
 
@@ -82,7 +82,7 @@ fun compile(
 
     val irProvidersWithoutDeserializer = generateTypicalIrProviderList(moduleDescriptor, irBuiltIns, symbolTable)
     // Create stubs
-    ExternalDependenciesGenerator(symbolTable, irProvidersWithoutDeserializer).generateUnboundSymbolsAsDependencies()
+    // ExternalDependenciesGenerator(symbolTable, irProvidersWithoutDeserializer).generateUnboundSymbolsAsDependencies()
     moduleFragment.patchDeclarationParents()
 
     deserializer.finalizeExpectActualLinker()

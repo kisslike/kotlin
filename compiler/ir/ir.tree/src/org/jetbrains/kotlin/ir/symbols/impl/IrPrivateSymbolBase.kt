@@ -53,10 +53,6 @@ abstract class IrBindableSymbolBase<out D : DeclarationDescriptor, B : IrSymbolO
     override fun bind(owner: B) {
         if (_owner == null) {
             _owner = owner
-            if ((owner as? IrFunction)?.name?.toString() == "equals") {
-                println("Binding $this to $owner")
-                //Throwable().printStackTrace()
-            }
         } else {
             throw IllegalStateException("${javaClass.simpleName} for $descriptor is already bound to $_owner, so can not be bound to $owner")
         }

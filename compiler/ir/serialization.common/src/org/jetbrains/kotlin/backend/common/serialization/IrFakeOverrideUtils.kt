@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.util.isReal
 import org.jetbrains.kotlin.ir.util.original
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.resolveFakeOverride
 
 // We may get several real supers here (e.g. see the code snippet from KT-33034).
@@ -69,7 +70,10 @@ fun IrSimpleFunction.resolveFakeOverride(allowAbstract: Boolean = false): IrSimp
 */
 
 val IrSimpleFunction.target: IrSimpleFunction
-    get() = (if (modality == Modality.ABSTRACT) this else resolveFakeOverride()!!)
+    get() = if (modality == Modality.ABSTRACT)
+        this
+    else
+        resolveFakeOverride() ?: error("Could not resolveFakeOverride() for ${this.render()}")
 
 val IrFunction.target: IrFunction get() = when (this) {
     is IrSimpleFunction -> this.target

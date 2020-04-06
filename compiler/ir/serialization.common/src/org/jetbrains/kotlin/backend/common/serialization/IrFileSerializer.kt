@@ -1051,6 +1051,9 @@ open class IrFileSerializer(
             .build()
 
     private fun serializeIrFunction(declaration: IrSimpleFunction): ProtoFunction {
+        if(declaration.nameForIrSerialization.toString() == "createJsMap") {
+            println("SERIALIZING: ${declaration.render()}")
+        }
         val proto = ProtoFunction.newBuilder()
             .setBase(serializeIrFunctionBase(declaration, FunctionFlags.encode(declaration)))
 
@@ -1122,9 +1125,7 @@ open class IrFileSerializer(
             .setName(serializeName(clazz.name))
 
         clazz.declarations.forEach {
-            if (it.isFakeOverride && declarationTable.isExportedDeclaration(it) && !backendSpecificFakeOverrideFilter(clazz) )
-                println("SKIPPING serialization for ${it.descriptor}")
-            else 
+            if (!(it.isFakeOverride && declarationTable.isExportedDeclaration(it) && !backendSpecificFakeOverrideFilter(clazz) ))
                 proto.addDeclaration(serializeDeclaration(it))
         }
 

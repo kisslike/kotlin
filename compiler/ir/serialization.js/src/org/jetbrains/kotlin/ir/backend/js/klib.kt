@@ -23,12 +23,14 @@ import org.jetbrains.kotlin.backend.common.serialization.metadata.DynamicTypeDes
 import org.jetbrains.kotlin.backend.common.serialization.metadata.KlibMetadataVersion
 import org.jetbrains.kotlin.backend.common.serialization.signature.IdSignatureDescriptor
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.*
 import org.jetbrains.kotlin.ir.backend.js.lower.serialization.metadata.KlibMetadataIncrementalSerializer
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -141,7 +143,7 @@ fun generateKLib(
     val expectDescriptorToSymbol = mutableMapOf<DeclarationDescriptor, IrSymbol>()
 
     val moduleFragment = psi2IrContext.generateModuleFragmentWithPlugins(project, files,
-        deserializer = null, expectDescriptorToSymbol = expectDescriptorToSymbol)
+        deserializer = null, expectDescriptorToSymbol = expectDescriptorToSymbol, withStubGenerator = true)
 
     moduleFragment.acceptVoid(ManglerChecker(JsManglerIr, Ir2DescriptorManglerAdapter(JsManglerDesc)))
 
@@ -271,9 +273,13 @@ fun GeneratorContext.generateModuleFragmentWithPlugins(
     project: Project,
     files: List<KtFile>,
     deserializer: IrDeserializer? = null,
-    expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null
+    expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null,
+    withStubGenerator: Boolean = false
 ): IrModuleFragment {
-    val irProviders = generateTypicalIrProviderList(moduleDescriptor, irBuiltIns, symbolTable, deserializer)
+    val irProviders = if (withStubGenerator)
+        generateTypicalIrProviderList(moduleDescriptor, irBuiltIns, symbolTable, deserializer)
+    else
+        generateTypicalIrProviderList2(moduleDescriptor, irBuiltIns, symbolTable, deserializer)
     val signaturer = IdSignatureDescriptor(JsManglerDesc)
     val psi2Ir = Psi2IrTranslator(languageVersionSettings, configuration, signaturer)
 
@@ -304,7 +310,7 @@ fun GeneratorContext.generateModuleFragmentWithPlugins(
 }
 
 fun GeneratorContext.generateModuleFragment(files: List<KtFile>, deserializer: IrDeserializer? = null, expectDescriptorToSymbol: MutableMap<DeclarationDescriptor, IrSymbol>? = null): IrModuleFragment {
-    val irProviders = generateTypicalIrProviderList(moduleDescriptor, irBuiltIns, symbolTable, deserializer)
+    val irProviders = generateTypicalIrProviderList2(moduleDescriptor, irBuiltIns, symbolTable, deserializer)
     val mangler = JsManglerDesc
     val signaturer = IdSignatureDescriptor(mangler)
     return Psi2IrTranslator(

@@ -694,32 +694,9 @@ abstract class KotlinIrLinker(
 
         if (!symbol.isPublicApi) return null
 
-        // println("getDeclaration asked for ${symbol.descriptor} for $symbol")
-        // if (symbol is IrBindablePublicSymbolBase<*, *>) println("which is ${symbol.signature}")
-
         if (!symbol.isBound) {
-            println("getDeclaration: ${symbol.descriptor} is not bound yet")
-
-/*
-            if (symbol is IrSimpleFunctionPublicSymbolImpl) {
-
-                val signature = symbol.signature
-                val topLevelSignature = signature.topLevelSignature()
-
-                if (topLevelSignature != signature &&
-                    symbolTable.referenceClassFromLinker(WrappedClassDescriptor(), topLevelSignature).isBound) {
-
-                val parentDescriptor = symbol.descriptor.containingDeclaration as ClassDescriptor
-                val parentSymbol =  symbolTable.referenceClass(parentDescriptor)
-                findDeserializedDeclarationForSymbol(parentSymbol)
-                return null
-            }
-            }
-*/
             findDeserializedDeclarationForSymbol(symbol) ?: return null
         }
-
-        if (symbol.isBound) println("getDeclaration: Bound to ${ir2string(symbol.owner)}")
 
         // TODO: we do have serializations for those, but let's just create a stub for now.
         if (!symbol.isBound && (symbol.descriptor.isExpectMember || symbol.descriptor.containingDeclaration?.isExpectMember == true))
@@ -738,7 +715,6 @@ abstract class KotlinIrLinker(
     override fun declareForwardDeclarations() {
         if (forwardModuleDescriptor == null) return
 
-        println("DECLARE FORWARD DECLARATIONS")
         val packageFragments = forwardDeclarations.map { it.descriptor.findPackage() }.distinct()
 
         // We don't bother making a real IR module here, as we have no need in it any later.
@@ -755,7 +731,6 @@ abstract class KotlinIrLinker(
             val declarations = symbols.map {
 
                 val classDescriptor = it.descriptor as ClassDescriptor
-                println("FORWARD: $classDescriptor")
                 val declaration = symbolTable.declareClass(
                     UNDEFINED_OFFSET, UNDEFINED_OFFSET, irrelevantOrigin,
                     classDescriptor,
