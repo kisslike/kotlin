@@ -10,7 +10,6 @@ import org.jetbrains.kotlin.TestsExceptionType
 import org.jetbrains.kotlin.spec.utils.*
 import org.jetbrains.kotlin.spec.utils.models.CommonInfoElementType
 import org.jetbrains.kotlin.spec.utils.models.CommonSpecTestFileInfoElementType
-import org.jetbrains.kotlin.spec.utils.models.LinkedSpecTest
 import org.jetbrains.kotlin.spec.utils.models.SpecTestInfoElements
 import org.jetbrains.kotlin.spec.utils.validators.SpecTestValidationException
 import org.jetbrains.kotlin.spec.utils.validators.SpecTestValidationFailedReason
@@ -66,12 +65,6 @@ private fun parseTestInfo(testFilePath: String, testFiles: TestFiles, linkedTest
 
 private fun parseImplementationTestInfo(testFilePath: String,  testFiles: TestFiles, linkedTestType: SpecTestLinkedType): ParsedTestFile {
     val patterns = linkedTestType.patterns.value
-    val testInfoByFilenameMatcher = patterns.testPathPattern.matcher(testFilePath)
-
-//    if (!testInfoByFilenameMatcher.find())
-//    {return null}
-    ///   throw SpecTestValidationException(SpecTestValidationFailedReason.FILENAME_NOT_VALID)
-
     val testInfoByContentMatcher = patterns.testInfoPattern.matcher(FileUtil.loadFile(File(testFilePath), true))
 
     if (!testInfoByContentMatcher.find()) {
@@ -84,13 +77,10 @@ private fun parseImplementationTestInfo(testFilePath: String,  testFiles: TestFi
     )
     val helpers = testInfoElements[CommonSpecTestFileInfoElementType.HELPERS]?.content?.splitByComma()?.toSet()
 
-    val testArea = TestArea.valueOf(testInfoByContentMatcher.group("testArea").withUnderscores())
-    val testType = TestType.valueOf(testInfoByContentMatcher.group("testType"))
-    val fileName =  testFilePath.split("/").last()
+
     val fileNameWithoutExtension =  testFilePath.split("/").last().replace(".kt", "")
     val description = fileNameWithoutExtension.toUpperCase()[0] +
             fileNameWithoutExtension.substring(1).replace(Regex("""([A-Z])"""), " $1").toLowerCase()
- //   LinkedSpecTest.getInstanceForImplementationTest(specVersion, testArea, testType, specPlaces, file.nameWithoutExtension)
     return ParsedTestFile(
         testArea = TestArea.valueOf(testInfoByContentMatcher.group("testArea").withUnderscores()),
         testType = TestType.valueOf(testInfoByContentMatcher.group("testType")),

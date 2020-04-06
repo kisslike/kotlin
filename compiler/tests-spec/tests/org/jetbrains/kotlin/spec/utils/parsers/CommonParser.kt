@@ -5,7 +5,10 @@
 
 package org.jetbrains.kotlin.spec.utils.parsers
 
-import org.jetbrains.kotlin.spec.utils.*
+import org.jetbrains.kotlin.spec.utils.SpecTestInfoElementContent
+import org.jetbrains.kotlin.spec.utils.SpecTestInfoElementType
+import org.jetbrains.kotlin.spec.utils.SpecTestLinkedType
+import org.jetbrains.kotlin.spec.utils.TestFiles
 import org.jetbrains.kotlin.spec.utils.models.*
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.testInfoElementPattern
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.testPathBaseRegexTemplate
@@ -45,40 +48,6 @@ object CommonParser {
             Pair(parseNotLinkedSpecTest(testFilePath, files), SpecTestLinkedType.NOT_LINKED)
         else ->
             throw SpecTestValidationException(SpecTestValidationFailedReason.FILENAME_NOT_VALID)
-    }
-
-    fun parseImplementationTest(file: File, testArea: TestArea): LinkedSpecTest? {
-        val matcher = ImplementationTestPatterns.testInfoPattern.matcher(file.readText())
-
-        if (!matcher.find())
-            return null
-
-        val testType = TestType.fromValue(matcher.group("testType"))
-            ?: throw SpecTestValidationException(SpecTestValidationFailedReason.TESTINFO_NOT_VALID)
-        val specVersion = matcher.group("specVersion")
-        val testSpecSentenceList = matcher.group("testSpecSentenceList")
-        val primarySpecSentenceListMatcher = ImplementationTestPatterns.primaryLinks.matcher(testSpecSentenceList)
-        val secondarySpecSentenceListMatcher = ImplementationTestPatterns.relevantSpecSentencesPattern.matcher(testSpecSentenceList)
-        val specPlaces = mutableListOf<SpecPlace>()
-
-
-        while (primarySpecSentenceListMatcher.find()) {
-            val x = primarySpecSentenceListMatcher.group("places")
-
-            val matcher = LinkedSpecTestPatterns.relevantLinksPattern.matcher(x)
-
-            while (matcher.find()){
-                specPlaces.add(
-                    SpecPlace(
-                        sections = matcher.group("sections").split(Regex(""",\s*""")),
-                        paragraphNumber = matcher.group("paragraphNumber").toInt(),
-                        sentenceNumber = matcher.group("sentenceNumber").toInt()
-                    )
-                )
-            }
-        }
-
-        return LinkedSpecTest.getInstanceForImplementationTest(specVersion, testArea, testType, specPlaces, file.nameWithoutExtension)
     }
 
     private fun createSpecPlace(placeMatcher: Matcher, basePlaceMatcher: Matcher = placeMatcher) =
@@ -121,7 +90,7 @@ object CommonParser {
         parseRelevantAndAlternativePlaces(alternativeRelevantPlacesMatcher, testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher, relevantAndAlternativePlaces)
 
 
-        val mainPlace = if (placeMatcher != null)            createSpecPlace(placeMatcher)
+        val mainPlace = if (placeMatcher != null) createSpecPlace(placeMatcher)
         else relevantAndAlternativePlaces.first()
 
         return LinkedSpecTest(
