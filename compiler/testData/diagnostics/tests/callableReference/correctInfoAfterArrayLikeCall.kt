@@ -1,7 +1,9 @@
 // !LANGUAGE: +NewInference
 // !DIAGNOSTICS: -UNUSED_PARAMETER
 /*
- * SPEC LINKS (spec version: 0.1-220, test type: pos):
+ * KOTLIN DIAGNOSTICS SPEC TEST (POSITIVE)
+ *
+ * SPEC VERSION 0.1-220
  * PRIMARY LINKS: expressions, call-and-property-access-expressions, navigation-operators -> paragraph 9 -> sentence 2
  * expressions, call-and-property-access-expressions, navigation-operators -> paragraph 8 -> sentence 1
  */

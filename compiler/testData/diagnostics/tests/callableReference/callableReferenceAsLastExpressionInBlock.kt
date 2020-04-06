@@ -1,8 +1,14 @@
 // !DIAGNOSTICS: -UNUSED_VARIABLE
 // !CHECK_TYPE
 /*
- * SPEC LINKS (spec version: 0.1-220, test type: pos):
- * PRIMARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 11 -> sentence 3
+ * KOTLIN DIAGNOSTICS SPEC TEST (POSITIVE)
+ *
+ * SPEC VERSION: 0.1-220
+ * MAIN LINK: expressions, call-and-property-access-expressions, callable-references -> paragraph 11 -> sentence 3
+ * PRIMARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 1441 -> sentence 344
+ * expressions, call-and-property-access-expressions, callable-references -> paragraph 1111 -> sentence 1111
+ * SECONDARY LINKS: expressions, call-and-property-access-expressions, callable-references -> paragraph 222 -> sentence 22222
+ * expressions, call-and-property-access-expressions, callable-references -> paragraph 3333 -> sentence 333
  */
 
 import kotlin.reflect.KFunction0
