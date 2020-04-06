@@ -16,7 +16,9 @@ import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.MULTILINE_COMMENT_
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.SECTIONS_IN_FILE_REGEX
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.SINGLE_LINE_COMMENT_REGEX
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.directiveRegex
+import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.ls
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.ps
+import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.ws
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.sectionsInPathRegex
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.testAreaRegex
 import org.jetbrains.kotlin.spec.utils.parsers.CommonPatterns.testPathRegexTemplate
@@ -34,6 +36,7 @@ object CommonPatterns {
 
     val ls: String = System.lineSeparator()
     val ps: String = Pattern.quote(File.separator)
+    val ws = """\s*"""
 
     val directiveRegex =
         """${SINGLE_LINE_COMMENT_REGEX.format("""[\w\s]+:""")}|${MULTILINE_COMMENT_REGEX.format(""" $ASTERISK_REGEX [\w\s]+:[\s\S]*?""")}"""
@@ -86,8 +89,10 @@ object LinkedSpecTestPatterns : BasePatterns {
     val linkRegex =
         Regex("""(( $ASTERISK_REGEX )?\s*($SECTIONS_IN_FILE_REGEX -> )?(paragraph $INTEGER_REGEX -> )?sentence $INTEGER_REGEX)""")
 
-    val primaryLinks: Pattern = Pattern.compile("""$PRIMARY_LINKS: (?<places>(${linkRegex}(\s)*\n)+)""")
-    val secondaryLinks: Pattern = Pattern.compile("""$SECONDARY_LINKS: (?<places>(${linkRegex}(\s)*\n)+)""")
+//    val primaryLinks: Pattern = Pattern.compile("""$PRIMARY_LINKS$ws:$ws$ls?(?<places>(${linkRegex}(\s)*\n)+)""")
+//    val secondaryLinks: Pattern = Pattern.compile("""$SECONDARY_LINKS$ws:$ws$ls?(?<places>(${linkRegex}(\s)*\n)+)""")
+    val primaryLinks: Pattern = Pattern.compile("""$PRIMARY_LINKS$ws:$ws(?<places>(${linkRegex}(\s)*\n)+)""")
+    val secondaryLinks: Pattern = Pattern.compile("""$SECONDARY_LINKS$ws:$ws(?<places>(${linkRegex}(\s)*\n)+)""")
 }
 
 object TestCasePatterns {

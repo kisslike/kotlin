@@ -35,15 +35,12 @@ object CommonParser {
     private fun parseBasePath(pathPartRegex: String, testFilePath: String) =
         Pattern.compile(testPathBaseRegexTemplate.format(pathPartRegex)).matcher(testFilePath)
 
-    fun parsePath(pathPartRegex: String, testFilePath: String) =
-        Pattern.compile(testPathBaseRegexTemplate.format(pathPartRegex)).matcher(testFilePath)
+    fun parseImplTest(testFilePath: String, files: TestFiles): Pair<LinkedSpecTest, SpecTestLinkedType> =
+        Pair(parseLinkedSpecTest(testFilePath, files, isImplementationTest = true), SpecTestLinkedType.LINKED)
 
-    fun parseImplTest(testFilePath: String, files: TestFiles): Pair<LinkedSpecTest, SpecTestLinkedType>
-            = Pair(parseLinkedSpecTest(testFilePath, files, isImplementationTest=true), SpecTestLinkedType.LINKED)
-
-    fun parseSpecTest(testFilePath: String, files: TestFiles) = when { //TODO()
+    fun parseSpecTest(testFilePath: String, files: TestFiles) = when {
         isPathMatched(LinkedSpecTestPatterns.pathPartRegex, testFilePath) ->
-            Pair(parseLinkedSpecTest(testFilePath, files), SpecTestLinkedType.LINKED)!!
+            Pair(parseLinkedSpecTest(testFilePath, files), SpecTestLinkedType.LINKED)
         isPathMatched(NotLinkedSpecTestPatterns.pathPartRegex, testFilePath) ->
             Pair(parseNotLinkedSpecTest(testFilePath, files), SpecTestLinkedType.NOT_LINKED)
         else ->
@@ -57,17 +54,16 @@ object CommonParser {
             placeMatcher.group("sentenceNumber").toInt()
         )
 
-    private fun parseRelevantAndAlternativePlaces(
+    private fun parseRelevantPlaces(
         placesMatcher: Matcher?,
-        placeMatcher: Matcher?,
-        relevantAndAlternativePlaces: MutableList<SpecPlace>
+        relevantPlaces: MutableList<SpecPlace>
     ) {
-        if (placeMatcher == null)
+        if (placesMatcher == null)
             return
         placesMatcher?.let {
-            relevantAndAlternativePlaces.add(createSpecPlace(it, placeMatcher))
+            relevantPlaces.add(createSpecPlace(it, placesMatcher))
             while (it.find()) {
-                relevantAndAlternativePlaces.add(createSpecPlace(it, placeMatcher))
+                relevantPlaces.add(createSpecPlace(it, placesMatcher))
             }
         }
     }
@@ -75,29 +71,31 @@ object CommonParser {
     fun parseLinkedSpecTest(testFilePath: String, testFiles: TestFiles, isImplementationTest: Boolean = false): LinkedSpecTest {
         val relevantAndAlternativePlaces = mutableListOf<SpecPlace>()
         val parsedTestFile =
-            if (!isImplementationTest){tryParseTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)}
-        else {
+            if (!isImplementationTest) {
+                tryParseTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)
+            } else {
                 tryParseImplementationTestInfo(testFilePath, testFiles, SpecTestLinkedType.LINKED)
             }
 
         val testInfoElements = parsedTestFile.testInfoElements
+
+        parseRelevantPlaces(
+            testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher,
+            relevantAndAlternativePlaces
+        )
+
+        parseRelevantPlaces(
+            testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher,
+            relevantAndAlternativePlaces
+        )
+
         val placeMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.MAIN_LINK]?.additionalMatcher
-        val relevantPlacesMatcher = testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher
-        parseRelevantAndAlternativePlaces(relevantPlacesMatcher, testInfoElements[LinkedSpecTestFileInfoElementType.PRIMARY_LINKS]?.additionalMatcher, relevantAndAlternativePlaces)
-
-        val alternativeRelevantPlacesMatcher =
-            testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher
-        parseRelevantAndAlternativePlaces(alternativeRelevantPlacesMatcher, testInfoElements[LinkedSpecTestFileInfoElementType.SECONDARY_LINKS]?.additionalMatcher, relevantAndAlternativePlaces)
-
-
-        val mainPlace = if (placeMatcher != null) createSpecPlace(placeMatcher)
-        else relevantAndAlternativePlaces.first()
 
         return LinkedSpecTest(
             testInfoElements[LinkedSpecTestFileInfoElementType.SPEC_VERSION]!!.content,
             parsedTestFile.testArea,
             parsedTestFile.testType,
-            mainPlace,
+            if (placeMatcher != null) createSpecPlace(placeMatcher) else relevantAndAlternativePlaces.first(),
             relevantAndAlternativePlaces,
             parsedTestFile.testNumber,
             parsedTestFile.testDescription,
@@ -138,33 +136,59 @@ object CommonParser {
 
         while (testInfoElementMatcher.find()) {
             val testInfoOriginalElementName = testInfoElementMatcher.group("name")
-            val testInfoElementName = rules.find {
-                it as Enum<*>
-                it.name == testInfoOriginalElementName.withUnderscores()
-            } ?: throw SpecTestValidationException(
-                SpecTestValidationFailedReason.TESTINFO_NOT_VALID,
-                "Unknown '$testInfoOriginalElementName' test info element name."
-            )
-            val testInfoElementValue: String? = when (testInfoOriginalElementName) {
-                LinkedSpecTestPatterns.PRIMARY_LINKS ->
-                    groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.primaryLinks, rawElements, testInfoOriginalElementName)
-                LinkedSpecTestPatterns.SECONDARY_LINKS ->
-                    groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.secondaryLinks, rawElements, testInfoOriginalElementName)
-                else ->
-                    testInfoElementMatcher.group("value")
-            }
+            val testInfoElementValue = parseTestInfoElementValue(testInfoOriginalElementName, testInfoElementMatcher, rawElements)
+            val testInfoElementName = parseSpecTestInfoElementType(rules, testInfoOriginalElementName)
             val testInfoElementValueMatcher = testInfoElementName.valuePattern?.matcher(testInfoElementValue)
-
-            if (testInfoElementValueMatcher != null && !testInfoElementValueMatcher.find())
-                throw SpecTestValidationException(
-                    SpecTestValidationFailedReason.TESTINFO_NOT_VALID,
-                    "'$testInfoElementValue' in '$testInfoElementName' is not parsed."
-                )
-
+            checkTestInfoElementIsCorrect(testInfoElementValueMatcher, testInfoElementName, testInfoElementValue)
             testInfoElementsMap[testInfoElementName] =
                 SpecTestInfoElementContent(testInfoElementValue ?: "", testInfoElementValueMatcher)
         }
+        checkRulesObservance(rules, testInfoElementsMap)
+        return testInfoElementsMap
+    }
 
+    private fun parseTestInfoElementValue(
+        testInfoOriginalElementName: String?,
+        testInfoElementMatcher: Matcher,
+        rawElements: String,
+    ) = when (testInfoOriginalElementName) {
+        LinkedSpecTestPatterns.PRIMARY_LINKS ->
+            groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.primaryLinks, rawElements, testInfoOriginalElementName)
+        LinkedSpecTestPatterns.SECONDARY_LINKS ->
+            groupRelevantAndAlternativePlaces(LinkedSpecTestPatterns.secondaryLinks, rawElements, testInfoOriginalElementName)
+        else ->
+            testInfoElementMatcher.group("value")
+    }
+
+
+    private fun parseSpecTestInfoElementType(
+        rules: Array<SpecTestInfoElementType>,
+        testInfoOriginalElementName: String
+    ) = rules.find {
+        it as Enum<*>
+        it.name == testInfoOriginalElementName.withUnderscores()
+    } ?: throw SpecTestValidationException(
+        SpecTestValidationFailedReason.TESTINFO_NOT_VALID,
+        "Unknown '$testInfoOriginalElementName' test info element name."
+    )
+
+    private fun checkTestInfoElementIsCorrect(
+        testInfoElementValueMatcher: Matcher?,
+        testInfoElementName: SpecTestInfoElementType,
+        testInfoElementValue: String?
+    ) {
+        if (testInfoElementValueMatcher != null && !testInfoElementValueMatcher.find())
+            throw SpecTestValidationException(
+                SpecTestValidationFailedReason.TESTINFO_NOT_VALID,
+                "'$testInfoElementValue' in '$testInfoElementName' is not parsed."
+            )
+    }
+
+
+    private fun checkRulesObservance(
+        rules: Array<SpecTestInfoElementType>,
+        testInfoElementsMap: MutableMap<SpecTestInfoElementType, SpecTestInfoElementContent>
+    ) {
         rules.forEach {
             if (it.required && !testInfoElementsMap.contains(it)) {
                 throw SpecTestValidationException(
@@ -173,11 +197,10 @@ object CommonParser {
                 )
             }
         }
-
-        return testInfoElementsMap
     }
 
-    private fun groupRelevantAndAlternativePlaces(placesPattern: Pattern, rawElements: String, linkType: String): String? {
+
+    private fun groupRelevantAndAlternativePlaces(placesPattern: Pattern, rawElements: String, linkType: String): String {
         val placesMatcher = placesPattern.matcher(rawElements)
         if (placesMatcher.find()) {
             return placesMatcher.group("places")

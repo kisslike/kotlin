@@ -52,18 +52,9 @@ object TestsJsonMapGenerator {
             File("${GeneralConfiguration.SPEC_TESTDATA_PATH}/${testArea.testDataPath}/$LINKED_TESTS_PATH").walkTopDown()
                 .forEach testFiles@{ file ->
                     if (!file.isFile || file.extension != "kt") return@testFiles
-
                     val (specTest, _) = CommonParser.parseSpecTest(file.canonicalPath, mapOf("main.kt" to file.readText()))
-
                     if (specTest is LinkedSpecTest) {
-                        val testInfo = getTestInfo(specTest)
-                        val testInfoWithFilePath = getTestInfo(specTest, file)
-
-                        testsMap.getOrCreateSpecTestObject(specTest.place, specTest.testArea, specTest.testType).add(testInfo)
-
-                        specTest.relevantPlaces?.forEach {
-                            testsMap.getOrCreateSpecTestObject(it, specTest.testArea, specTest.testType).add(testInfoWithFilePath)
-                        }
+                        collectInfoFromTests(testsMap, specTest, getTestInfo(specTest), getTestInfo(specTest, file))
                     }
                 }
         }
@@ -71,25 +62,26 @@ object TestsJsonMapGenerator {
 
     private fun collectInfoFromImplementationTests(testsMap: JsonObject) {
         TestArea.values().forEach { testArea ->
-            val files = File("${GeneralConfiguration.TESTDATA_PATH}/${testArea.testDataPath}").walkTopDown()
-
-            for (file in files) {
-                if (!file.isFile || file.extension != "kt") continue
-
-                if (!LinkedSpecTestPatterns.testInfoPattern.matcher(file.readText()).find())
-                    continue
-                val (specTest, _) = CommonParser.parseImplTest(file.canonicalPath, mapOf("main.kt" to file.readText()))
-
-                if (specTest is LinkedSpecTest){
-                    val testInfoWithFilePath = getTestInfo(specTest, file)
-
-                    testsMap.getOrCreateSpecTestObject(specTest.place, specTest.testArea, specTest.testType).add(testInfoWithFilePath)
-
-                    specTest.relevantPlaces?.forEach {
-                        testsMap.getOrCreateSpecTestObject(it, specTest.testArea, specTest.testType).add(testInfoWithFilePath)
-                    }
+            File("${GeneralConfiguration.TESTDATA_PATH}/${testArea.testDataPath}").walkTopDown()
+                .forEach testFiles@{ file ->
+                    if (!file.isFile || file.extension != "kt") return@testFiles
+                    if (!LinkedSpecTestPatterns.testInfoPattern.matcher(file.readText()).find())
+                        return@testFiles
+                    val (specTest, _) = CommonParser.parseImplTest(file.canonicalPath, mapOf("main.kt" to file.readText()))
+                    collectInfoFromTests(testsMap, specTest, getTestInfo(specTest, file))
                 }
-            }
+        }
+    }
+
+    private fun collectInfoFromTests(
+        testsMap: JsonObject,
+        specTest: LinkedSpecTest,
+        testInfoForMainLink: JsonObject,
+        testInfoForRelevantLink: JsonObject = testInfoForMainLink
+    ) {
+        testsMap.getOrCreateSpecTestObject(specTest.place, specTest.testArea, specTest.testType).add(testInfoForMainLink)
+        specTest.relevantPlaces?.forEach {
+            testsMap.getOrCreateSpecTestObject(it, specTest.testArea, specTest.testType).add(testInfoForRelevantLink)
         }
     }
 
